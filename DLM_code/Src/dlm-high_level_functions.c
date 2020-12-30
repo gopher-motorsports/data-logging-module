@@ -16,30 +16,32 @@
 //  is to help with overall code orginization
 
 
+// self include
+#include "dlm-high_level_functions.h"
+
+
 // init
 //  This function will handle power-on behavior, all completely TBD
 //  according to everthing else the module does
 void init()
 {
     // TODO
+
+    manage_data_aquisition_init();
 }
 
 
 // manage_data_aquisition
-//  This function will control the DAMs in some way. This will likely be
-//  some form of sending a data aquisition frequency to each DAM (CAN command?).
-//  Communication with Ian will be nessassary before writing this function. Will
-//  Also need to handle the frequent changes in what data needs to be logged from
-//  run to run (Some form of configuration?)
+//  This function will control the DAMs by sending a CAN command to send
+//  the data of that bucket to the DLM. How these structs are configured
+//  is controled by a CAN command sent by the DAM
 //
 // Call FRQ:
-//  If frequency of data sending is handled on the DAMs, this does not need to be
-//  very frequent, prob 50-100ms just to verify data is being sent at the correct
-//  rate. If frequency is handled by the DLM, then this function will need to be
-//  called at the maximum parameter request rate the DLM should support.
+//  This function will need to be called at the maximum parameter
+//  request rate the DLM should support.
 void manage_data_aquisition()
 {
-    // TODO
+    request_all_buckets();
 }
 
 
@@ -151,7 +153,7 @@ void control_vehicle_systems()
 //  if it has been recieved
 //
 // Call FRQ:
-//  0.5ms or faster
+//  100us because we can
 void can_service_loop()
 {
     // TODO

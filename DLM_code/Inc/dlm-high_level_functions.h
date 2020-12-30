@@ -5,8 +5,13 @@
 #ifndef DLM_HIGH_LEVEL_FUNCTIONS_h
 #define DLM_HIGH_LEVEL_FUNCTIONS_h
 
-// Defines
+// includes
+#include "dlm-manage_data_aquisition.h"
+#include "../../../STM32_CAN/GopherCAN.h"
+//#include "GopherCAN.h"
 
+// Defines
+// TODO
 
 // Function prototypes
 void init();
