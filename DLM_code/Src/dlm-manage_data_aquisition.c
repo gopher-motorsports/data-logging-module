@@ -1,6 +1,8 @@
 // dlm-manage_data_aquisition.c
 //  TODO DOCS
 
+
+// self include
 #include "dlm-manage_data_aquisition.h"
 
 
@@ -9,13 +11,17 @@
 //  to be squentially run through in order to send the correct request, and the DLM
 //  must be able to handle a general amount of them. A head node is not needed as deletion
 //  is not a needed feature except in the case of deleting everything
-BUCKET_NODE* first_bucket = NULL;
+BUCKET_NODE* first_bucket;
 
 
 // manage_data_aquisition_init
 //  TODO DOCS
-void manage_data_aquisition_init()
+void manage_data_aquisition_init(BUCKET_NODE** first_bucket_ptr_ptr)
 {
+    // This allows other parts of the DAM to access the bucket configurations
+    &first_bucket = first_bucket_ptr_ptr;
+    first_bucket = NULL;
+
     // Add the correct CAN command functions
     // TODO
 
@@ -142,3 +148,27 @@ void request_all_buckets()
         bucket_node = bucket_node->next;
     }
 }
+
+
+// store_new_data
+//  Function to figure out what data stored in the GopherCAN parameters is new
+//  based on data in the bucket linked list. If it deturmines the data is new,
+//  store that data to the data ring buffer
+void store_new_data()
+{
+    // For each bucket in the linked list, check if it has been requested recently:
+    // recently meaning a time that now is a reasonable time to still be recieving messages
+    // TODO
+
+    // For each parameter in a recently requested bucket, check if the last time it was
+    // recieved is sooner than it was requested and has not been already written
+    // TODO
+
+    // If the parameter still needs too be writted to RAM, store it and enable the flag to
+    // indicate it has been stored. Use the time it was requested as the time the data point
+    // was taken
+    // TODO
+}
+
+
+// End of dlm-manage_data_aquisition.c

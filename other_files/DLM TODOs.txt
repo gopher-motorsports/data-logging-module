@@ -1,5 +1,6 @@
 
 
+GENERAL NOTES:
 DLM-DAM interaction
  - DLM must be able to handle a CAN command that passes in Parameter and Bucket, what DAM can be obtained by what module sent it. (this will need to be added to GopherCAN)
    ex: add_param_to_bucket(U8 sending_dam, U16 param_id, U8 bucket_id)
@@ -7,9 +8,14 @@ DLM-DAM interaction
 
 
 TODOs:
+general:
+ - Spend time cleaning include paths
+
 manage_data_aquisition:
  - Consider and implement what to do in case of malloc errors
  - TX_CAN_MESSAGE errors (full buffers)
+
+move_ram_data_to_storage:
 
 
 TESTS:
@@ -17,9 +23,14 @@ manage_data_aquisition:
  [_] TEST adding and removing parameters from buckets. This will also test the linked lists
  [_] TEST assigning bucket frequencies
  [_] TEST time-based bucket requests
+ [_] TEST if double pointer witchcraft is done correctly in init()
+
+move_ram_data_to_storage:
 
 
 NOTES:
 manage_data_aquisition:
  - maximum time between bucket requests = ~60 seconds
  - Possible bug if a data message takes too long to return and another bucket request is already sent before it is recieved
+
+move_ram_data_to_storage:

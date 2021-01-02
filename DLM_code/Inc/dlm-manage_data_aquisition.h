@@ -19,7 +19,6 @@ void assign_bucket_to_frq(U8 sending_dam, U8 bucket_id, U16 ms_between_requests)
 
 
 // defines
-#define NULL (void*)(0)
 #define BUCKET_REQUEST_COMMAND; // TODO add this to the master spreadsheet
 
 // structs

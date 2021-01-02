@@ -2,13 +2,15 @@
 //
 // Created by Calvin Molitor
 
-#ifndef DLM_HIGH_LEVEL_FUNCTIONS_h
-#define DLM_HIGH_LEVEL_FUNCTIONS_h
+#ifndef DLM_HIGH_LEVEL_FUNCTIONS_H
+#define DLM_HIGH_LEVEL_FUNCTIONS_H
 
 // includes
-#include "dlm-manage_data_aquisition.h"
+#include "../../../C-Utils/base_types.h"
+//#include "base_types.h"
 #include "../../../STM32_CAN/GopherCAN.h"
 //#include "GopherCAN.h"
+#include "dlm-manage_data_aquisition.h"
 
 // Defines
 // TODO
@@ -16,7 +18,6 @@
 // Function prototypes
 void init();
 void manage_data_aquisition();
-void store_data_to_ram();
 void move_ram_data_to_storage();
 void interface_with_vtm();
 void begin_logging_session();
