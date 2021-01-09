@@ -10,6 +10,7 @@
 //#include "base_types.h"
 #include "../../../STM32_CAN/GopherCAN.h"
 //#include "GopherCAN.h"
+#include "dlm-storage_structs.h"
 
 // function prototypes
 void manage_data_aquisition_init();

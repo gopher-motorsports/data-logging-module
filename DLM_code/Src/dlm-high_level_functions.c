@@ -64,7 +64,8 @@ void manage_data_aquisition()
 //   - how many write cycles to the persistant storage we are ok giving up
 void move_ram_data_to_storage()
 {
-    // TODO
+    // TODO check heap usage, when it reaches a certain level, start flushing the RAM
+    //  buffer to persistant storage
 }
 
 
