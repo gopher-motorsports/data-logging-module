@@ -1,7 +1,13 @@
 // dlm-manage_data_aquisition.c
 //  TODO DOCS
 
+
+// self include
 #include "dlm-manage_data_aquisition.h"
+
+
+// static functions
+static void add_param_to_ram(U16_LIST_NODE* param_node);
 
 
 // Pointer to the first node for the linked list of all of the buckets.
@@ -10,6 +16,16 @@
 //  must be able to handle a general amount of them. A head node is not needed as deletion
 //  is not a needed feature except in the case of deleting everything
 BUCKET_NODE* first_bucket = NULL;
+
+// Head node and first pointer to the linked list for all of the data points
+//  in the RAM data buffer. A linked list is a good candidate for many of the
+//  same reasons as the bucket LL, but a head node is required as deletion will
+//  be common
+DATA_INFO_NODE ram_data_head = {0, 0, NULL};
+
+// from GopherCAN.c
+extern void** all_parameter_structs;
+extern U8* parameter_data_types;
 
 
 // manage_data_aquisition_init
@@ -21,6 +37,9 @@ void manage_data_aquisition_init()
 
     // Send CAN commands to all modules (specifically to the DAMs) that
     // this module is ready to be interacted with to add buckets
+    // TODO
+
+    // Assign the storage location and size for the data buffer
     // TODO
 }
 
@@ -88,6 +107,7 @@ void add_param_to_bucket(U8 sending_dam, U16 param_id, U8 bucket_id)
     // the front because order does not matter in this list
     param_node->next = bucket_node->bucket.param_ids->next;
     bucket_node->bucket.param_ids->next = param_node;
+    param_node->pending_responce = FALSE;
 }
 
 
@@ -123,6 +143,7 @@ void assign_bucket_to_frq(U8 sending_dam, U8 bucket_id, U16 ms_between_requests)
 void request_all_buckets()
 {
     BUCKET_NODE* bucket_node = first_bucket;
+    U16_LIST_NODE* param_node;
 
     while(bucket_node != NULL)
     {
@@ -136,9 +157,200 @@ void request_all_buckets()
                 // TODO error handling
             }
 
+            // set the pending responce flag for each parameter in this bucket to true
+            param_node = bucket_node->bucket.param_ids;
+            while (param_node != NULL)
+            {
+                param_node->pending_responce = TRUE;
+                param_node = param_node->next;
+            }
+
+            // update the last request tick
             bucket_node->bucket.last_request = HAL_GetTick();
         }
 
+        // move on to the next bucket
         bucket_node = bucket_node->next;
     }
 }
+
+
+// store_new_data
+//  Function to figure out what data stored in the GopherCAN parameters is new
+//  based on data in the bucket linked list. If it deturmines the data is new,
+//  store that data to the data ring buffer
+void store_new_data()
+{
+    BUCKET_NODE* bucket_node = first_bucket;
+    U16_LIST_NODE* param_node;
+    CAN_INFO_STRUCT* param_info;
+
+    // For each parameter in each bucket, check if the last time it was
+    // recieved is sooner than its bucket was requested and has not been already written
+    while (bucket_node != NULL)
+    {
+        param_node = bucket_node->bucket.param_ids;
+
+        // run through each parameter in the bucket
+        while (param_node != NULL)
+        {
+            // get the CAN_INFO_STRUCT related to this parameter. Data stores the parameter ID in the node struct
+            param_info = (CAN_INFO_STRUCT*)(all_parameter_structs[param_node->data]);
+
+            // if the parameter is pending an update and the last RX of the param is after the
+            // request was sent, it needs to be added to RAM
+            if (param_node->pending_responce == TRUE
+                && param_info->last_rx >= bucket_node->bucket.last_request)
+            {
+                // add the param data to RAM
+                add_param_to_ram(param_node);
+
+                // disable the pending responce flag
+                param_node->pending_responce = FALSE;
+            }
+
+            // move on to the next parameter
+            param_node = param_node->next;
+        }
+        
+        // move on to the next bucket
+        bucket_node = bucket_node->next;
+    }
+}
+
+
+// add_param_to_ram
+//  Function to add the data of a specific parameter to the RAM buffer
+static void add_param_to_ram(U16_LIST_NODE* param_node)
+{
+    // Data will be stored in a linked list of nodes that include what parameter
+    //  (param_id), the ms since startup that the datapoint was requested, and the param data.
+    //  The size of the data can be obtained using the luckup table in GopherCAN
+
+    DATA_INFO_NODE* data_node;
+    CAN_INFO_STRUCT* can_param_struct;
+
+    // Choose the correct type of data node based on the parameter data type, then malloc the memory needed
+    switch (parameter_data_types[param_node->data])
+	{
+	case UNSIGNED8:
+        U8_DATA_NODE* u8_data_node = (U8_DATA_NODE*)malloc(sizeof(U8_DATA_NODE));
+
+        // check for malloc failure
+        if (u8_data_node == NULL)
+        {
+            return;
+        }
+
+		u8_data_node->data = ((U8_CAN_STRUCT*)(can_param_struct))->data;
+        data_node = (DATA_INFO_NODE*)u8_data_node;
+
+	case UNSIGNED16:
+		U16_DATA_NODE* u16_data_node = (U16_DATA_NODE*)malloc(sizeof(U16_DATA_NODE));
+
+        // check for malloc failure
+        if (u16_data_node == NULL)
+        {
+            return;
+        }
+
+		u16_data_node->data = ((U16_CAN_STRUCT*)(can_param_struct))->data;
+        data_node = (DATA_INFO_NODE*)u16_data_node;
+
+	case UNSIGNED32:
+		U32_DATA_NODE* u32_data_node = (U32_DATA_NODE*)malloc(sizeof(U32_DATA_NODE));
+
+        // check for malloc failure
+        if (u32_data_node == NULL)
+        {
+            return;
+        }
+
+		u32_data_node->data = ((U32_CAN_STRUCT*)(can_param_struct))->data;
+        data_node = (DATA_INFO_NODE*)u32_data_node;
+
+	case UNSIGNED64:
+		U64_DATA_NODE* u64_data_node = (U64_DATA_NODE*)malloc(sizeof(U64_DATA_NODE));
+
+        // check for malloc failure
+        if (u64_data_node == NULL)
+        {
+            return;
+        }
+
+		u64_data_node->data = ((U64_CAN_STRUCT*)(can_param_struct))->data;
+        data_node = (DATA_INFO_NODE*)u64_data_node;
+
+	case SIGNED8:
+		S8_DATA_NODE* s8_data_node = (S8_DATA_NODE*)malloc(sizeof(S8_DATA_NODE));
+
+        // check for malloc failure
+        if (s8_data_node == NULL)
+        {
+            return;
+        }
+
+		s8_data_node->data = ((S8_CAN_STRUCT*)(can_param_struct))->data;
+        data_node = (DATA_INFO_NODE*)s8_data_node;
+
+	case SIGNED16:
+		S16_DATA_NODE* s16_data_node = (S16_DATA_NODE*)malloc(sizeof(S16_DATA_NODE));
+
+        // check for malloc failure
+        if (s16_data_node == NULL)
+        {
+            return;
+        }
+
+		s16_data_node->data = ((S16_CAN_STRUCT*)(can_param_struct))->data;
+        data_node = (DATA_INFO_NODE*)s16_data_node;
+
+	case SIGNED32:
+		S32_DATA_NODE* s32_data_node = (S32_DATA_NODE*)malloc(sizeof(S32_DATA_NODE));
+
+        // check for malloc failure
+        if (s32_data_node == NULL)
+        {
+            return;
+        }
+
+		s32_data_node->data = ((S32_CAN_STRUCT*)(can_param_struct))->data;
+        data_node = (DATA_INFO_NODE*)s32_data_node;
+
+	case SIGNED64:
+		S64_DATA_NODE* s64_data_node = (S64_DATA_NODE*)malloc(sizeof(S64_DATA_NODE));
+
+        // check for malloc failure
+        if (s64_data_node == NULL)
+        {
+            return;
+        }
+
+		s64_data_node->data = ((S64_CAN_STRUCT*)(can_param_struct))->data;
+        data_node = (DATA_INFO_NODE*)s64_data_node;
+
+	case FLOATING:
+		FLOAT_DATA_NODE* float_data_node = (FLOAT_DATA_NODE*)malloc(sizeof(FLOAT_DATA_NODE));
+
+        // check for malloc failure
+        if (float_data_node == NULL)
+        {
+            return;
+        }
+
+		float_data_node->data = ((FLOAT_CAN_STRUCT*)(can_param_struct))->data;
+        data_node = (DATA_INFO_NODE*)float_data_node;
+
+	default:
+		// the datatype is not found for some reason
+        return;
+	}
+
+    // add the new node to the front of the list, after the head node
+    data_node->next = ram_data_head.next;
+    ram_data_head.next = data_node;
+
+}
+
+
+// End of dlm-manage_data_aquisition.c

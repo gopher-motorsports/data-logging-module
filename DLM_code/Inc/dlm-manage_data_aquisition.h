@@ -10,17 +10,19 @@
 //#include "base_types.h"
 #include "../../../STM32_CAN/GopherCAN.h"
 //#include "GopherCAN.h"
+#include "dlm-storage_structs.h"
 
 // function prototypes
 void manage_data_aquisition_init();
 void manage_data_aquisition_deinit();
 void add_param_to_bucket(U8 sending_dam, U16 param_id, U8 bucket_id);
 void assign_bucket_to_frq(U8 sending_dam, U8 bucket_id, U16 ms_between_requests);
+void request_all_buckets();
+void store_new_data();
 
 
 // defines
-#define NULL (void*)(0)
-#define BUCKET_REQUEST_COMMAND; // TODO add this to the master spreadsheet
+#define BUCKET_REQUEST_COMMAND // TODO add this to the master spreadsheet
 
 // structs
 // bucket struct
@@ -47,6 +49,7 @@ typedef struct
 {
     U16 data;
     U16_LIST_NODE* next;
+    U8 pending_responce;
 } U16_LIST_NODE;
 
 

@@ -20,6 +20,10 @@
 #include "dlm-high_level_functions.h"
 
 
+// Global Variables
+BUCKET_NODE* bucket_list;
+
+
 // init
 //  This function will handle power-on behavior, all completely TBD
 //  according to everthing else the module does
@@ -42,22 +46,9 @@ void init()
 void manage_data_aquisition()
 {
     request_all_buckets();
+    store_new_data();
 }
 
-
-// store_current_data_to_ram
-//  This function will store the data currently stored in the GopherCAN parameters
-//  To RAM, along with the timestamp they were last recieved. Do not store data that
-//  has not been updated from the associated module, as that is both misleading
-//  and a waste of space. The way this data should be stored is still TBD
-//
-// Call FRQ:
-//  Quite fast, prob 1ms. Depends on how much data we want and what the
-//  fastest sending frequency from the DAMs is
-void store_data_to_ram()
-{
-    // TODO
-}
 
 
 // move_ram_data_to_storage
@@ -73,7 +64,8 @@ void store_data_to_ram()
 //   - how many write cycles to the persistant storage we are ok giving up
 void move_ram_data_to_storage()
 {
-    // TODO
+    // TODO check heap usage, when it reaches a certain level, start flushing the RAM
+    //  buffer to persistant storage
 }
 
 
