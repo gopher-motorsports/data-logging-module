@@ -31,7 +31,7 @@ void init()
 {
     // TODO
 
-    manage_data_aquisition_init(&bucket_list);
+    manage_data_aquisition_init();
 }
 
 
