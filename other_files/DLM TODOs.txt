@@ -10,6 +10,7 @@ DLM-DAM interaction
 TODOs:
 general:
  - Spend time cleaning include paths
+ - Handle malloc errors better
 
 manage_data_aquisition:
  - Consider and implement what to do in case of malloc errors
@@ -24,6 +25,7 @@ manage_data_aquisition:
  [_] TEST assigning bucket frequencies
  [_] TEST time-based bucket requests
  [_] TEST if double pointer witchcraft is done correctly in init()
+ [_] TEST adding every data point to storage
 
 move_ram_data_to_storage:
 
