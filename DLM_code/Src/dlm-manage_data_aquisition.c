@@ -38,9 +38,6 @@ void manage_data_aquisition_init()
     // Send CAN commands to all modules (specifically to the DAMs) that
     // this module is ready to be interacted with to add buckets
     // TODO
-
-    // Assign the storage location and size for the data buffer
-    // TODO
 }
 
 
@@ -203,7 +200,7 @@ void store_new_data()
                 && param_info->last_rx >= bucket_node->bucket.last_request)
             {
                 // add the param data to RAM
-                add_param_to_ram(param_node);
+                add_param_to_ram(param_node, bucket_node);
 
                 // disable the pending responce flag
                 param_node->pending_responce = FALSE;
@@ -221,7 +218,7 @@ void store_new_data()
 
 // add_param_to_ram
 //  Function to add the data of a specific parameter to the RAM buffer
-static void add_param_to_ram(U16_LIST_NODE* param_node)
+static void add_param_to_ram(U16_LIST_NODE* param_node, BUCKET_NODE* bucket_node)
 {
     // Data will be stored in a linked list of nodes that include what parameter
     //  (param_id), the ms since startup that the datapoint was requested, and the param data.
@@ -345,6 +342,13 @@ static void add_param_to_ram(U16_LIST_NODE* param_node)
 		// the datatype is not found for some reason
         return;
 	}
+
+    // set the time the data was taken as the time is was requested, as there is less
+    // TX delay than RX delay
+    data_node->data_time = bucket_node->bucket.last_request;
+
+    // the parameter id is stored in the data of the parameter node
+    data_node->param = param_node->data;
 
     // add the new node to the front of the list, after the head node
     data_node->next = ram_data_head.next;

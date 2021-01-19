@@ -36,3 +36,7 @@ manage_data_aquisition:
  - Possible bug if a data message takes too long to return and another bucket request is already sent before it is recieved
 
 move_ram_data_to_storage:
+ - All data is stored as a dpf in the USB storage, https://blog.demofox.org/2017/11/21/floating-point-precision/ has a good table showing the precision of this storage method
+    For integers, +/-2^53 can be stored
+
+

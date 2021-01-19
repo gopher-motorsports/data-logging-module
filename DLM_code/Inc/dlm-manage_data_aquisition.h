@@ -19,6 +19,8 @@ void add_param_to_bucket(U8 sending_dam, U16 param_id, U8 bucket_id);
 void assign_bucket_to_frq(U8 sending_dam, U8 bucket_id, U16 ms_between_requests);
 void request_all_buckets();
 void store_new_data();
+static void add_param_to_ram(U16_LIST_NODE* param_node);
+
 
 
 // defines

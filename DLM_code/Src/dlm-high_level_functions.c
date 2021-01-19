@@ -21,7 +21,6 @@
 
 
 // Global Variables
-BUCKET_NODE* bucket_list;
 
 
 // init
@@ -32,6 +31,7 @@ void init()
     // TODO
 
     manage_data_aquisition_init();
+    move_ram_data_to_storage_init();
 }
 
 
@@ -66,6 +66,7 @@ void move_ram_data_to_storage()
 {
     // TODO check heap usage, when it reaches a certain level, start flushing the RAM
     //  buffer to persistant storage
+
 }
 
 
