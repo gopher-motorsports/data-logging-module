@@ -7,6 +7,8 @@
 
 
 // includes
+#include "../../../STM32_CAN/GopherCAN.h"
+//#include "GopherCAN.h"
 #include "dlm-storage_structs.h"
 
 
@@ -15,7 +17,11 @@
 
 
 // defines
-// TODO
+// sizes of the different parts of the persistant storage data points. Sizes in Bytes
+#define STORAGE_PARAM_SIZE 2
+#define TIMESTAMP_SIZE 4
+#define DATA_SIZE 8
+#define DATA_POINT_STORAGE_SIZE STORAGE_PARAM_SIZE+TIMESTAMP_SIZE+DATA_SIZE
 
 
 #endif

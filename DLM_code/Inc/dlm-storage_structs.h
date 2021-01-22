@@ -8,6 +8,14 @@
 #include "..\\C-Utils\\base_types.h"
 
 
+// Union for converting a double to a U64
+typedef union
+{
+	double d;
+	U64 u64;
+} DPF_CONVERTER;
+
+
 // Node of all of the data storage info, but not the data
 typedef struct
 {

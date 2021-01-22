@@ -21,6 +21,7 @@
 
 
 // Global Variables
+DATA_INFO_NODE ram_data = {0, 0, NULL};
 
 
 // init
@@ -30,8 +31,8 @@ void init()
 {
     // TODO
 
-    manage_data_aquisition_init();
-    move_ram_data_to_storage_init();
+    manage_data_aquisition_init(&ram_data);
+    move_ram_data_to_storage_init(&ram_data);
 }
 
 
@@ -64,7 +65,7 @@ void manage_data_aquisition()
 //   - how many write cycles to the persistant storage we are ok giving up
 void move_ram_data_to_storage()
 {
-    // TODO check heap usage, when it reaches a certain level, start flushing the RAM
+    // Check heap usage, when it reaches a certain level, start flushing the RAM
     //  buffer to persistant storage
 
 }

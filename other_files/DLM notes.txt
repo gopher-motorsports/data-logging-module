@@ -28,15 +28,19 @@ manage_data_aquisition:
  [_] TEST adding every data point to storage
 
 move_ram_data_to_storage:
+ [_] TEST memory usage
+ [_] TEST for memory leaks by running for a very long time with lots of data aquisition
+ [_] TEST data string builder to make sure it does everything correctly - check casting
 
 
 NOTES:
 manage_data_aquisition:
- - maximum time between bucket requests = ~60 seconds
+ - maximum time between bucket requests = ~65 seconds
  - Possible bug if a data message takes too long to return and another bucket request is already sent before it is recieved
 
 move_ram_data_to_storage:
  - All data is stored as a dpf in the USB storage, https://blog.demofox.org/2017/11/21/floating-point-precision/ has a good table showing the precision of this storage method
     For integers, +/-2^53 can be stored
+ - This causes each data point to be 14B, and if 1000 data points are collected per second this takes ~840kB per minute
 
 

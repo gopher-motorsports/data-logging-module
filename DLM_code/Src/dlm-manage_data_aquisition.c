@@ -17,11 +17,11 @@ static void add_param_to_ram(U16_LIST_NODE* param_node);
 //  is not a needed feature except in the case of deleting everything
 BUCKET_NODE* first_bucket = NULL;
 
-// Head node and first pointer to the linked list for all of the data points
+// Head node pointer and first pointer to the linked list for all of the data points
 //  in the RAM data buffer. A linked list is a good candidate for many of the
 //  same reasons as the bucket LL, but a head node is required as deletion will
 //  be common
-DATA_INFO_NODE ram_data_head = {0, 0, NULL};
+DATA_INFO_NODE* ram_data_head;
 
 // from GopherCAN.c
 extern void** all_parameter_structs;
@@ -30,8 +30,10 @@ extern U8* parameter_data_types;
 
 // manage_data_aquisition_init
 //  TODO DOCS
-void manage_data_aquisition_init()
+void manage_data_aquisition_init(DATA_INFO_NODE* ram_data)
 {
+    ram_data_head = ram_data;
+
     // Add the correct CAN command functions
     // TODO
 
@@ -88,6 +90,7 @@ void add_param_to_bucket(U8 sending_dam, U16 param_id, U8 bucket_id)
         // this is needed to make sure the list knows to stop at the end
         bucket_node->next = NULL;
         bucket_node->bucket.param_ids = NULL;
+        bucket_node->bucket.ms_between_requests = 0;
     }
 
     // malloc some new memory for the U16 node to store the parameter
@@ -144,8 +147,10 @@ void request_all_buckets()
 
     while(bucket_node != NULL)
     {
-        // check if it is the correct time to send a new message
-        if (HAL_GetTick() >= bucket_node->bucket.last_request + bucket_node->bucket.ms_between_requests)
+        // check if it is the correct time to send a new message. 0ms between requests means the
+        // bucket is not fully initialized
+        if ((bucket_node->bucket.ms_between_requests != 0)
+            && (HAL_GetTick() >= bucket_node->bucket.last_request + bucket_node->bucket.ms_between_requests))
         {
             // send the command to request the bucket
             if (send_can_command(PRIO_HIGH, bucket_node->bucket.dam_id,
@@ -351,8 +356,8 @@ static void add_param_to_ram(U16_LIST_NODE* param_node, BUCKET_NODE* bucket_node
     data_node->param = param_node->data;
 
     // add the new node to the front of the list, after the head node
-    data_node->next = ram_data_head.next;
-    ram_data_head.next = data_node;
+    data_node->next = ram_data_head->next;
+    ram_data_head->next = data_node;
 
 }
 
