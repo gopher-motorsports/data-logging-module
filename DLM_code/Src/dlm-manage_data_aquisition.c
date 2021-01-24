@@ -40,7 +40,7 @@ void manage_data_aquisition_init(DATA_INFO_NODE* ram_data)
 
     // Send CAN commands to all modules (specifically to the DAMs) that
     // this module is ready to be interacted with to add buckets
-    // TODO
+    send_can_command(PRIO_HIGH, ALL_MODULES_ID, SEND_BUCKET_PARAMS, 0, 0, 0, 0);
 }
 
 
