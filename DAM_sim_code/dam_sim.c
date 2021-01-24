@@ -45,7 +45,7 @@ void dam_sim_init(CAN_HandleTypeDef* hcan_ptr)
 
     // add all of the CAN commands needed
     add_custom_can_func(SEND_BUCKET_PARAMS, &send_bucket_params, TRUE, NULL);
-    add_custom_can_func(BUCKET_REQUESTED, &bucket_requested, TRUE, NULL);
+    add_custom_can_func(REQUEST_BUCKET, &bucket_requested, TRUE, NULL);
 }
 
 

@@ -26,6 +26,8 @@ manage_data_aquisition:
  [_] TEST time-based bucket requests
  [_] TEST if double pointer witchcraft is done correctly in init()
  [_] TEST adding every data point to storage
+ [_] TEST parameters with IDs greater than 255
+ [_] TEST bucket request intervals greater than 255
 
 move_ram_data_to_storage:
  [_] TEST memory usage

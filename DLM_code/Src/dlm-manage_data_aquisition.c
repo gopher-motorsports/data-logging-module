@@ -35,7 +35,8 @@ void manage_data_aquisition_init(DATA_INFO_NODE* ram_data)
     ram_data_head = ram_data;
 
     // Add the correct CAN command functions
-    // TODO
+    add_custom_can_func(ADD_PARAM_TO_BUCKET, &add_param_to_bucket, TRUE, NULL);
+    add_custom_can_func(ASSIGN_BUCKET_TO_FRQ, &assign_bucket_to_frq, TRUE, NULL);
 
     // Send CAN commands to all modules (specifically to the DAMs) that
     // this module is ready to be interacted with to add buckets
@@ -55,10 +56,15 @@ void manage_data_aquisition_deinit()
 //  This function is a CAN command, designed to be activated by the DAM. When
 //  called, this will add the param inputted to the correct bucket with the assosiated
 //  DAM included. Built to handle a general amount of DAMs, params, and buckets
-void add_param_to_bucket(U8 sending_dam, U16 param_id, U8 bucket_id)
+void add_param_to_bucket(MODULE_ID sending_dam, void* UNUSED,
+    U8 param_id_msb, U8 param_id_lsb, U8 bucket_id, U8 UNUSED3)
 {
     BUCKET_NODE* bucket_node = first_bucket;
     U16_LIST_NODE* param_node;
+    U16 param_id;
+
+    // create the param_id from the two 8-bit chunks
+    param_id = (param_id_msb << BITS_IN_BYTE) | param_id_lsb;
 
     // check if there exists a bucket with this ID on this DAM in the bucket list
     while (bucket_node != NULL)
@@ -107,16 +113,26 @@ void add_param_to_bucket(U8 sending_dam, U16 param_id, U8 bucket_id)
     // the front because order does not matter in this list
     param_node->next = bucket_node->bucket.param_ids->next;
     bucket_node->bucket.param_ids->next = param_node;
+
+    // set the details of the param_node
+    param_node->data = param_id;
     param_node->pending_responce = FALSE;
+
+
 }
 
 
 // assign_bucket_to_frq
 //  This will take the inputted DAM and bucket ID and set the time to wait between each request
 //  in ms. Designed to be called as a CAN command coming from a DAM
-void assign_bucket_to_frq(U8 sending_dam, U8 bucket_id, U16 ms_between_requests)
+void assign_bucket_to_frq(MODULE_ID sending_dam, void* UNUSED,
+    U8 bucket_id, U8 ms_between_requests_msb, U8 ms_between_requests_lsb, U8 UNUSED3)
 {
     BUCKET_NODE* bucket_node = first_bucket;
+    U16 ms_between_requests;
+
+    // create the U16 for ms_between_requests out of the 2 U8s
+    ms_between_requests = (ms_between_requests_msb << BITS_IN_BYTES) | ms_between_requests_lsb;
 
     // check if there exists a bucket with this ID on this DAM in the bucket list
     while (bucket_node != NULL)
@@ -154,7 +170,7 @@ void request_all_buckets()
         {
             // send the command to request the bucket
             if (send_can_command(PRIO_HIGH, bucket_node->bucket.dam_id,
-                BUCKET_REQUEST_COMMAND, bucket_node->bucket.bucket_id) != CAN_SUCCESS)
+                REQUEST_BUCKET, bucket_node->bucket.bucket_id, 0, 0, 0) != CAN_SUCCESS)
             {
                 // TODO error handling
             }
