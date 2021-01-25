@@ -26,6 +26,12 @@ static void add_param_to_ram(U16_LIST_NODE* param_node);
 // defines
 #define BUCKET_REQUEST_COMMAND // TODO add this to the master spreadsheet
 
+// error defines
+#define NO_ERROR 0
+#define CAN_ERROR -1
+#define MALLOC_ERROR -2
+
+
 // structs
 // bucket struct
 typedef struct

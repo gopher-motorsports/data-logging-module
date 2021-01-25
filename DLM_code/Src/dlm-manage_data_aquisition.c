@@ -1,5 +1,6 @@
 // dlm-manage_data_aquisition.c
-//  TODO DOCS
+//  Source code file for the DLM to handle communication with DAMs in order to
+//  aquire data from them. Also handles storing that data into a linked list.
 
 
 // self include
@@ -23,13 +24,17 @@ BUCKET_NODE* first_bucket = NULL;
 //  be common
 DATA_INFO_NODE* ram_data_head;
 
+// Error variable that is set on an error. Useful for debugging
+S8 last_error = NO_ERROR;
+
 // from GopherCAN.c
 extern void** all_parameter_structs;
 extern U8* parameter_data_types;
 
 
 // manage_data_aquisition_init
-//  TODO DOCS
+//  Add the correct CAN commands and send a command to all of the DAMs that
+//  the DLM is ready for the buckets to be filled with parameters
 void manage_data_aquisition_init(DATA_INFO_NODE* ram_data)
 {
     ram_data_head = ram_data;
@@ -89,7 +94,7 @@ void add_param_to_bucket(MODULE_ID sending_dam, void* UNUSED,
         // test if malloc failed
         if (bucket_node == NULL)
         {
-            // TODO handle a malloc error
+            last_error = MALLOC_ERROR;
             return;
         }
 
@@ -105,7 +110,7 @@ void add_param_to_bucket(MODULE_ID sending_dam, void* UNUSED,
     // test if malloc failed
     if (param_node == NULL)
     {
-        // TODO handle a malloc error
+        last_error = MALLOC_ERROR;
         return;
     }
 
@@ -172,7 +177,7 @@ void request_all_buckets()
             if (send_can_command(PRIO_HIGH, bucket_node->bucket.dam_id,
                 REQUEST_BUCKET, bucket_node->bucket.bucket_id, 0, 0, 0) != CAN_SUCCESS)
             {
-                // TODO error handling
+                last_error = CAN_ERROR;
             }
 
             // set the pending responce flag for each parameter in this bucket to true
