@@ -4,10 +4,14 @@
 
 // self include
 #include "dlm-move_ram_data_to_storage.h"
+#include "GopherCAN.h"
+#include "dlm-storage_structs.h"
+#include <stdlib.h>
 
 
 // This is the same head for the RAM storage linked list in manage_data_aquisition
 DATA_INFO_NODE* ram_data_head_ptr;
+extern U8 parameter_data_types[NUM_OF_PARAMETERS];
 
 
 // move_ram_data_to_storage_init
@@ -69,22 +73,22 @@ void build_data_string(U8* data_str, DATA_INFO_NODE* data_node)
     U8 c;
 
     // write the parameter to the first 2 bytes
-    for (c = 0, c < STORAGE_PARAM_SIZE, c++)
+    for (c = 0; c < STORAGE_PARAM_SIZE; c++)
     {
         data_str[c] = (U8)(data_node->param >> ((STORAGE_PARAM_SIZE - 1) - c));
     }
 
     // write the timestamp to the next 4 bytes
-    for (c = 0, c < TIMESTAMP_SIZE, c++)
+    for (c = 0; c < TIMESTAMP_SIZE; c++)
     {
-        data_str[c + STORAGE_PARAM_SIZE] = (U8)(data_node->data_time >> ((TIMESTAMP_SIZE - 1) - c);
+        data_str[c + STORAGE_PARAM_SIZE] = (U8)(data_node->data_time >> ((TIMESTAMP_SIZE - 1) - c));
     }
 
     // write the double of the data to the last 8 bytes
     data_union.d = convert_data_to_dpf(data_node);
-    for (c = 0, c < DATA_SIZE, c++)
+    for (c = 0; c < DATA_SIZE; c++)
     {
-        data_str[c + STORAGE_PARAM_SIZE + TIMESTAMP_SIZE] = (U8)(data_union.u64 >> ((DATA_SIZE - 1) - c);
+        data_str[c + STORAGE_PARAM_SIZE + TIMESTAMP_SIZE] = (U8)(data_union.u64 >> ((DATA_SIZE - 1) - c));
     }
 }
 
@@ -129,6 +133,9 @@ double convert_data_to_dpf(DATA_INFO_NODE* data_node)
         // Something went wrong, just write 0 to data
 		return 0;
 	}
+
+    // this coude should not be reached, this is to make the compiler happy
+    return 0;
 }
 
 

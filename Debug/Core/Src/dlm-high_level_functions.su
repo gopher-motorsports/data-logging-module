@@ -1,0 +1,9 @@
+dlm-high_level_functions.c:52:6:dlm_init	16	static
+dlm-high_level_functions.c:96:6:manage_data_aquisition	8	static
+dlm-high_level_functions.c:115:6:move_ram_data_to_storage	4	static
+dlm-high_level_functions.c:131:6:interface_with_vtm	4	static
+dlm-high_level_functions.c:145:6:begin_logging_session	4	static
+dlm-high_level_functions.c:159:6:end_logging_session	4	static
+dlm-high_level_functions.c:173:6:offload_data	4	static
+dlm-high_level_functions.c:187:6:control_vehicle_systems	4	static
+dlm-high_level_functions.c:201:6:can_service_loop	8	static

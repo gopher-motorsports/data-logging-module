@@ -7,13 +7,17 @@
 
 
 // includes
-#include "../../../STM32_CAN/GopherCAN.h"
-//#include "GopherCAN.h"
+#include "base_types.h"
+#include "GopherCAN.h"
 #include "dlm-storage_structs.h"
 
 
 // function prototypes
-// TODO
+void move_ram_data_to_storage_init(DATA_INFO_NODE* storage_ptr);
+void write_data_to_storage();
+void build_data_string(U8* data_str, DATA_INFO_NODE* data_node);
+double convert_data_to_dpf(DATA_INFO_NODE* data_node);
+void free_node_memory(DATA_INFO_NODE* data_node);
 
 
 // defines

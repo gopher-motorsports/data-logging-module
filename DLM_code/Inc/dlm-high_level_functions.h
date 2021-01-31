@@ -6,22 +6,12 @@
 #define DLM_HIGH_LEVEL_FUNCTIONS_H
 
 
-// includes
-#include "../../../C-Utils/base_types.h"
-//#include "base_types.h"
-#include "../../../STM32_CAN/GopherCAN.h"
-//#include "GopherCAN.h"
-#include "dlm-storage_structs.h"
-#include "dlm-manage_data_aquisition.h"
-#include "dlm-move_ram_data_to_storage.h"
-
-
 // Defines
 // TODO
 
 
 // Function prototypes
-void init();
+void dlm_init();
 void manage_data_aquisition();
 void move_ram_data_to_storage();
 void interface_with_vtm();

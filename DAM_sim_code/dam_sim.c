@@ -3,6 +3,7 @@
 //  to act like a DAM and interface with the DLM for testing.
 
 #include "dam_sim.h"
+#include "GopherCAN.h"
 
 
 // tester variables
@@ -18,6 +19,8 @@ extern FLOAT_CAN_STRUCT float_tester;
 
 // HAL CAN struct
 CAN_HandleTypeDef* example_hcan;
+
+U8 this_module = DAM_ID;
 
 // dam_sim_init
 //  init GopherCAN and the tester variables

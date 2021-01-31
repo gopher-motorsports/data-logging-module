@@ -4,10 +4,10 @@
 
 // self include
 #include "dlm-manage_data_aquisition.h"
-
-
-// static functions
-static void add_param_to_ram(U16_LIST_NODE* param_node);
+#include <stdlib.h>
+#include "dlm-storage_structs.h"
+#include "base_types.h"
+#include "GopherCAN.h"
 
 
 // Pointer to the first node for the linked list of all of the buckets.
@@ -24,8 +24,8 @@ BUCKET_NODE* first_bucket = NULL;
 DATA_INFO_NODE* ram_data_head;
 
 // from GopherCAN.c
-extern void** all_parameter_structs;
-extern U8* parameter_data_types;
+extern void* all_parameter_structs[NUM_OF_PARAMETERS];
+extern U8 parameter_data_types[NUM_OF_PARAMETERS];
 
 
 // manage_data_aquisition_init
@@ -40,7 +40,7 @@ void manage_data_aquisition_init(DATA_INFO_NODE* ram_data)
 
     // Send CAN commands to all modules (specifically to the DAMs) that
     // this module is ready to be interacted with to add buckets
-    // TODO
+    send_can_command(PRIO_HIGH, DAM_ID, SEND_BUCKET_PARAMS, 0, 0, 0, 0);
 }
 
 
@@ -56,7 +56,7 @@ void manage_data_aquisition_deinit()
 //  This function is a CAN command, designed to be activated by the DAM. When
 //  called, this will add the param inputted to the correct bucket with the assosiated
 //  DAM included. Built to handle a general amount of DAMs, params, and buckets
-void add_param_to_bucket(MODULE_ID sending_dam, void* UNUSED,
+void add_param_to_bucket(U8 sending_dam, void* UNUSED,
     U8 param_id_msb, U8 param_id_lsb, U8 bucket_id, U8 UNUSED3)
 {
     BUCKET_NODE* bucket_node = first_bucket;
@@ -125,14 +125,14 @@ void add_param_to_bucket(MODULE_ID sending_dam, void* UNUSED,
 // assign_bucket_to_frq
 //  This will take the inputted DAM and bucket ID and set the time to wait between each request
 //  in ms. Designed to be called as a CAN command coming from a DAM
-void assign_bucket_to_frq(MODULE_ID sending_dam, void* UNUSED,
+void assign_bucket_to_frq(U8 sending_dam, void* UNUSED,
     U8 bucket_id, U8 ms_between_requests_msb, U8 ms_between_requests_lsb, U8 UNUSED3)
 {
     BUCKET_NODE* bucket_node = first_bucket;
     U16 ms_between_requests;
 
     // create the U16 for ms_between_requests out of the 2 U8s
-    ms_between_requests = (ms_between_requests_msb << BITS_IN_BYTES) | ms_between_requests_lsb;
+    ms_between_requests = (ms_between_requests_msb << BITS_IN_BYTE) | ms_between_requests_lsb;
 
     // check if there exists a bucket with this ID on this DAM in the bucket list
     while (bucket_node != NULL)
@@ -239,7 +239,7 @@ void store_new_data()
 
 // add_param_to_ram
 //  Function to add the data of a specific parameter to the RAM buffer
-static void add_param_to_ram(U16_LIST_NODE* param_node, BUCKET_NODE* bucket_node)
+void add_param_to_ram(U16_LIST_NODE* param_node, BUCKET_NODE* bucket_node)
 {
     // Data will be stored in a linked list of nodes that include what parameter
     //  (param_id), the ms since startup that the datapoint was requested, and the param data.
@@ -248,10 +248,12 @@ static void add_param_to_ram(U16_LIST_NODE* param_node, BUCKET_NODE* bucket_node
     DATA_INFO_NODE* data_node;
     CAN_INFO_STRUCT* can_param_struct;
 
+    can_param_struct = (CAN_INFO_STRUCT*)(all_parameter_structs[param_node->data]);
+
     // Choose the correct type of data node based on the parameter data type, then malloc the memory needed
     switch (parameter_data_types[param_node->data])
 	{
-	case UNSIGNED8:
+	case UNSIGNED8: ;
         U8_DATA_NODE* u8_data_node = (U8_DATA_NODE*)malloc(sizeof(U8_DATA_NODE));
 
         // check for malloc failure
@@ -263,7 +265,7 @@ static void add_param_to_ram(U16_LIST_NODE* param_node, BUCKET_NODE* bucket_node
 		u8_data_node->data = ((U8_CAN_STRUCT*)(can_param_struct))->data;
         data_node = (DATA_INFO_NODE*)u8_data_node;
 
-	case UNSIGNED16:
+	case UNSIGNED16: ;
 		U16_DATA_NODE* u16_data_node = (U16_DATA_NODE*)malloc(sizeof(U16_DATA_NODE));
 
         // check for malloc failure
@@ -275,7 +277,7 @@ static void add_param_to_ram(U16_LIST_NODE* param_node, BUCKET_NODE* bucket_node
 		u16_data_node->data = ((U16_CAN_STRUCT*)(can_param_struct))->data;
         data_node = (DATA_INFO_NODE*)u16_data_node;
 
-	case UNSIGNED32:
+	case UNSIGNED32: ;
 		U32_DATA_NODE* u32_data_node = (U32_DATA_NODE*)malloc(sizeof(U32_DATA_NODE));
 
         // check for malloc failure
@@ -287,7 +289,7 @@ static void add_param_to_ram(U16_LIST_NODE* param_node, BUCKET_NODE* bucket_node
 		u32_data_node->data = ((U32_CAN_STRUCT*)(can_param_struct))->data;
         data_node = (DATA_INFO_NODE*)u32_data_node;
 
-	case UNSIGNED64:
+	case UNSIGNED64: ;
 		U64_DATA_NODE* u64_data_node = (U64_DATA_NODE*)malloc(sizeof(U64_DATA_NODE));
 
         // check for malloc failure
@@ -299,7 +301,7 @@ static void add_param_to_ram(U16_LIST_NODE* param_node, BUCKET_NODE* bucket_node
 		u64_data_node->data = ((U64_CAN_STRUCT*)(can_param_struct))->data;
         data_node = (DATA_INFO_NODE*)u64_data_node;
 
-	case SIGNED8:
+	case SIGNED8: ;
 		S8_DATA_NODE* s8_data_node = (S8_DATA_NODE*)malloc(sizeof(S8_DATA_NODE));
 
         // check for malloc failure
@@ -311,7 +313,7 @@ static void add_param_to_ram(U16_LIST_NODE* param_node, BUCKET_NODE* bucket_node
 		s8_data_node->data = ((S8_CAN_STRUCT*)(can_param_struct))->data;
         data_node = (DATA_INFO_NODE*)s8_data_node;
 
-	case SIGNED16:
+	case SIGNED16: ;
 		S16_DATA_NODE* s16_data_node = (S16_DATA_NODE*)malloc(sizeof(S16_DATA_NODE));
 
         // check for malloc failure
@@ -323,7 +325,7 @@ static void add_param_to_ram(U16_LIST_NODE* param_node, BUCKET_NODE* bucket_node
 		s16_data_node->data = ((S16_CAN_STRUCT*)(can_param_struct))->data;
         data_node = (DATA_INFO_NODE*)s16_data_node;
 
-	case SIGNED32:
+	case SIGNED32: ;
 		S32_DATA_NODE* s32_data_node = (S32_DATA_NODE*)malloc(sizeof(S32_DATA_NODE));
 
         // check for malloc failure
@@ -335,7 +337,7 @@ static void add_param_to_ram(U16_LIST_NODE* param_node, BUCKET_NODE* bucket_node
 		s32_data_node->data = ((S32_CAN_STRUCT*)(can_param_struct))->data;
         data_node = (DATA_INFO_NODE*)s32_data_node;
 
-	case SIGNED64:
+	case SIGNED64: ;
 		S64_DATA_NODE* s64_data_node = (S64_DATA_NODE*)malloc(sizeof(S64_DATA_NODE));
 
         // check for malloc failure
@@ -347,7 +349,7 @@ static void add_param_to_ram(U16_LIST_NODE* param_node, BUCKET_NODE* bucket_node
 		s64_data_node->data = ((S64_CAN_STRUCT*)(can_param_struct))->data;
         data_node = (DATA_INFO_NODE*)s64_data_node;
 
-	case FLOATING:
+	case FLOATING: ;
 		FLOAT_DATA_NODE* float_data_node = (FLOAT_DATA_NODE*)malloc(sizeof(FLOAT_DATA_NODE));
 
         // check for malloc failure
