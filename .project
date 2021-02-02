@@ -32,21 +32,6 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>Core/Inc/GopherCAN.h</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/STM32_CAN/GopherCAN.h</locationURI>
-		</link>
-		<link>
-			<name>Core/Inc/GopherCAN_ring_buffer.h</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/STM32_CAN/GopherCAN_ring_buffer.h</locationURI>
-		</link>
-		<link>
-			<name>Core/Inc/GopherCAN_structs.h</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/STM32_CAN/GopherCAN_structs.h</locationURI>
-		</link>
-		<link>
 			<name>Core/Src/GopherCAN.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/STM32_CAN/GopherCAN.c</locationURI>

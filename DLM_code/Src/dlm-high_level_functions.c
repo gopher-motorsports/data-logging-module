@@ -111,12 +111,12 @@ void manage_data_aquisition()
 //  involve many factors including:
 //   - the max amount of lost data that we are willing to take
 //   - the size of the RAM buffer and how long that will take to fill up
-//   - how many write cycles to the persistant storage we are ok giving up
+//   - how many write cycles to the persistent storage we are ok giving up
 void move_ram_data_to_storage()
 {
-    // Check heap usage, when it reaches a certain level, start flushing the RAM
-    //  buffer to persistant storage
-	//write_data_to_storage()
+    // TODO Use some logic to deturmine when the best time is to write to storage. Right
+	// now it just writes every second
+	write_data_to_storage();
 
 }
 

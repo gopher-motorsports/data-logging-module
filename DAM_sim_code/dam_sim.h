@@ -6,7 +6,6 @@
 
 // includes
 #include "GopherCAN.h"
-#include "../../gophercan-lib/GopherCAN.h"
 #include "base_types.h"
 
 

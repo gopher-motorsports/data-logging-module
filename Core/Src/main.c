@@ -121,7 +121,7 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of can_loop_task */
-  osThreadDef(can_loop_task, can_loop, osPriorityHigh, 0, 128);
+  osThreadDef(can_loop_task, can_loop, osPriorityNormal, 0, 128);
   can_loop_taskHandle = osThreadCreate(osThread(can_loop_task), NULL);
 
   /* definition and creation of dlm_main_loop */
@@ -311,6 +311,7 @@ void dlm_main(void const * argument)
   for(;;)
   {
 	  manage_data_aquisition();
+	  move_ram_data_to_storage();
     osDelay(1);
   }
   /* USER CODE END dlm_main */
