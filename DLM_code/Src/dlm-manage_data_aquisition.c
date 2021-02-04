@@ -241,6 +241,10 @@ void store_new_data()
                 if (add_param_to_ram(param_node, bucket_node))
                 {
                 	// TODO error handling
+
+                	// for now, turn on the onboard LED
+                	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
+
                 	return;
                 }
 

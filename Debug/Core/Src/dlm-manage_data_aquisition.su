@@ -4,4 +4,4 @@ dlm-manage_data_aquisition.c:59:6:add_param_to_bucket	32	static
 dlm-manage_data_aquisition.c:142:6:assign_bucket_to_frq	24	static
 dlm-manage_data_aquisition.c:174:6:request_all_buckets	32	static
 dlm-manage_data_aquisition.c:216:6:store_new_data	24	static
-dlm-manage_data_aquisition.c:263:4:add_param_to_ram	72	static
+dlm-manage_data_aquisition.c:267:4:add_param_to_ram	72	static

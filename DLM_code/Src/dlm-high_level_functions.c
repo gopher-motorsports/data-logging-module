@@ -45,6 +45,8 @@ extern S32_CAN_STRUCT s32_tester;
 extern S64_CAN_STRUCT s64_tester;
 extern FLOAT_CAN_STRUCT float_tester;
 
+U16 counter = 0;
+
 
 // dlm_init
 //  This function will handle power-on behavior, all completely TBD
@@ -114,9 +116,17 @@ void manage_data_aquisition()
 //   - how many write cycles to the persistent storage we are ok giving up
 void move_ram_data_to_storage()
 {
-    // TODO Use some logic to deturmine when the best time is to write to storage. Right
+    // TODO Use some logic to determine when the best time is to write to storage. Right
 	// now it just writes every second
-	write_data_to_storage();
+	if (counter == 1000)
+	{
+		write_data_to_storage();
+		counter = 0;
+	}
+	else
+	{
+		counter++;
+	}
 
 }
 
@@ -203,10 +213,10 @@ void can_service_loop()
 	// This is needed to account for a case where the RX buffer fills up, as the ISR is only
 	//  triggered directly on reciving the message
 	// TODO enable interrupts when not debugging
-	service_can_rx_hardware(dlm_hcan0, CAN_RX_FIFO0);
-	service_can_rx_hardware(dlm_hcan0, CAN_RX_FIFO1);
-	service_can_rx_hardware(dlm_hcan1, CAN_RX_FIFO0);
-	service_can_rx_hardware(dlm_hcan1, CAN_RX_FIFO1);
+	//service_can_rx_hardware(dlm_hcan0, CAN_RX_FIFO0);
+	//service_can_rx_hardware(dlm_hcan0, CAN_RX_FIFO1);
+	//service_can_rx_hardware(dlm_hcan1, CAN_RX_FIFO0);
+	//service_can_rx_hardware(dlm_hcan1, CAN_RX_FIFO1);
 
 	// handle each RX message in the buffer
 	if (service_can_rx_buffer())

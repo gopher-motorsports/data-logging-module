@@ -21,18 +21,18 @@ move_ram_data_to_storage:
 
 TESTS:
 manage_data_aquisition:
- [_] TEST adding and removing parameters from buckets. This will also test the linked lists
- [_] TEST assigning bucket frequencies
- [_] TEST time-based bucket requests
- [_] TEST if double pointer witchcraft is done correctly in init()
- [_] TEST adding every data point to storage
+ [x] TEST adding and parameters from buckets. This will also test the linked lists
+ [x] TEST assigning bucket frequencies
+ [x] TEST time-based bucket requests
+ [x] TEST if double pointer witchcraft is done correctly in init()
+ [x] TEST adding every data point to storage
  [_] TEST parameters with IDs greater than 255
  [_] TEST bucket request intervals greater than 255
 
 move_ram_data_to_storage:
- [_] TEST memory usage
- [_] TEST for memory leaks by running for a very long time with lots of data aquisition
- [_] TEST data string builder to make sure it does everything correctly - check casting
+ [x] TEST memory usage
+ [x] TEST for memory leaks by running for a very long time with lots of data aquisition
+ [x] TEST data string builder to make sure it does everything correctly - check casting for each data type
 
 
 NOTES:
