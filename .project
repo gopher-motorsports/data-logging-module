@@ -30,4 +30,31 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>Core/Src/GopherCAN.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/STM32_CAN/GopherCAN.c</locationURI>
+		</link>
+		<link>
+			<name>Core/Src/GopherCAN_ring_buffer.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/STM32_CAN/GopherCAN_ring_buffer.c</locationURI>
+		</link>
+		<link>
+			<name>Core/Src/dlm-high_level_functions.c</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/DLM_code/Src/dlm-high_level_functions.c</locationURI>
+		</link>
+		<link>
+			<name>Core/Src/dlm-manage_data_aquisition.c</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/DLM_code/Src/dlm-manage_data_aquisition.c</locationURI>
+		</link>
+		<link>
+			<name>Core/Src/dlm-move_ram_data_to_storage.c</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/DLM_code/Src/dlm-move_ram_data_to_storage.c</locationURI>
+		</link>
+	</linkedResources>
 </projectDescription>

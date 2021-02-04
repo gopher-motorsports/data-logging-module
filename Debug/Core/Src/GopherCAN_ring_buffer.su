@@ -1,0 +1,6 @@
+GopherCAN_ring_buffer.c:14:6:init_buffer	24	static
+GopherCAN_ring_buffer.c:25:9:is_full	16	static
+GopherCAN_ring_buffer.c:38:9:is_empty	16	static
+GopherCAN_ring_buffer.c:51:10:get_from_buffer	16	static
+GopherCAN_ring_buffer.c:59:6:remove_from_front	16	static
+GopherCAN_ring_buffer.c:79:6:add_message_to_back	24	static
