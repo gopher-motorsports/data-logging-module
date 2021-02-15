@@ -13,7 +13,7 @@
 // Each function will call functions will only call functions in files
 //  with the name 'dlm-FUNCTION_NAME.c'. Ex: the function 'manage_data_aquisition'
 //  will call functions from the file 'dlm-manage_data_aquisition.c'. This
-//  is to help with overall code orginization
+//  is to help with overall code organization
 
 
 // self include
