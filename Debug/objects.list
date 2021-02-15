@@ -1,5 +1,5 @@
-"Core/Src/GopherCAN.o"
-"Core/Src/GopherCAN_ring_buffer.o"
+"C-Utils/base_types.o"
+"C-Utils/ring_buffer.o"
 "Core/Src/dlm-high_level_functions.o"
 "Core/Src/dlm-manage_data_aquisition.o"
 "Core/Src/dlm-move_ram_data_to_storage.o"
@@ -39,3 +39,5 @@
 "Middlewares/Third_Party/FreeRTOS/Source/timers.o"
 "Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1/port.o"
 "Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.o"
+"gophercan-lib/GopherCAN.o"
+"gophercan-lib/GopherCAN_ring_buffer.o"
