@@ -88,18 +88,35 @@ clean:
 	-@rm ./*.bin -f
 	-@rm ./C-Utils/*.o -f
 	-@rm ./C-Utils/*.su -f
+	-@rm ./C-Utils/*.d -f
 	-@rm ./Core/Src/*.o -f
 	-@rm ./Core/Src/*.su -f
+	-@rm ./Core/Src/*.d -f
 	-@rm ./Core/Startup/*.o -f
 	-@rm ./Core/Startup/*.su -f
+	-@rm ./Core/Startup/*.d -f
 	-@rm ./DLM_code/Src/*.o -f
 	-@rm ./DLM_code/Src/*.su -f
+	-@rm ./DLM_code/Src/*.d -f
 	-@rm ./Drivers/STM32F7xx_HAL_Driver/Src/*.o -f
 	-@rm ./Drivers/STM32F7xx_HAL_Driver/Src/*.su -f
+	-@rm ./Drivers/STM32F7xx_HAL_Driver/Src/*.d -f
 	-@rm ./gophercan-lib/*.o -f
 	-@rm ./gophercan-lib/*.su -f
+	-@rm ./gophercan-lib/*.d -f
+	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/*.o -f
+	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/*.su -f
+	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/*.d -f
+	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1/*.o -f
+	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1/*.su -f
+	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1/*.d -f
+	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/*.o -f
+	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/*.su -f
+	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/*.d -f
 	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/*.o -f
 	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/*.su -f
+	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/*.d -f
+
 	-@echo ' '
 
 secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST) $(OBJCOPY_BIN)
