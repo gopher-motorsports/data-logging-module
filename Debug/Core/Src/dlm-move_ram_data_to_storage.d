@@ -1,11 +1,10 @@
 Core/Src/dlm-move_ram_data_to_storage.o: \
- C:/Users/hmoca/Desktop/gm-firmware/components/data-logging-module/DLM_code/Src/dlm-move_ram_data_to_storage.c \
+ ../../../components/data-logging-module/DLM_code/Src/dlm-move_ram_data_to_storage.c \
  ../DLM_code/Inc/dlm-move_ram_data_to_storage.h \
- C:/Users/hmoca/Desktop/gm-firmware/C-Utils/base_types.h \
- C:/Users/hmoca/Desktop/gm-firmware/gophercan-lib/GopherCAN.h \
- C:/Users/hmoca/Desktop/gm-firmware/gophercan-lib/GopherCAN_structs.h \
- c:\users\hmoca\desktop\gm-firmware\c-utils\base_types.h \
- C:/Users/hmoca/Desktop/gm-firmware/gophercan-lib/GopherCAN_ring_buffer.h \
+ ../../../C-Utils/base_types.h ../../../gophercan-lib/GopherCAN.h \
+ ../../../gophercan-lib/GopherCAN_structs.h \
+ ../../../gophercan-lib/../C-Utils/base_types.h \
+ ../../../gophercan-lib/GopherCAN_ring_buffer.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal.h \
  ../Core/Inc/stm32f7xx_hal_conf.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_rcc.h \
@@ -36,20 +35,19 @@ Core/Src/dlm-move_ram_data_to_storage.o: \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_tim.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_tim_ex.h \
  ../DLM_code/Inc/dlm-storage_structs.h \
- c:\users\hmoca\desktop\gm-firmware\c-utils\base_types.h \
  ../DLM_code/Inc/dlm-storage_structs.h
 
 ../DLM_code/Inc/dlm-move_ram_data_to_storage.h:
 
-C:/Users/hmoca/Desktop/gm-firmware/C-Utils/base_types.h:
+../../../C-Utils/base_types.h:
 
-C:/Users/hmoca/Desktop/gm-firmware/gophercan-lib/GopherCAN.h:
+../../../gophercan-lib/GopherCAN.h:
 
-C:/Users/hmoca/Desktop/gm-firmware/gophercan-lib/GopherCAN_structs.h:
+../../../gophercan-lib/GopherCAN_structs.h:
 
-c:\users\hmoca\desktop\gm-firmware\c-utils\base_types.h:
+../../../gophercan-lib/../C-Utils/base_types.h:
 
-C:/Users/hmoca/Desktop/gm-firmware/gophercan-lib/GopherCAN_ring_buffer.h:
+../../../gophercan-lib/GopherCAN_ring_buffer.h:
 
 ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal.h:
 
@@ -110,7 +108,5 @@ C:/Users/hmoca/Desktop/gm-firmware/gophercan-lib/GopherCAN_ring_buffer.h:
 ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_tim_ex.h:
 
 ../DLM_code/Inc/dlm-storage_structs.h:
-
-c:\users\hmoca\desktop\gm-firmware\c-utils\base_types.h:
 
 ../DLM_code/Inc/dlm-storage_structs.h:

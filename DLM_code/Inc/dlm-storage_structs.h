@@ -5,7 +5,7 @@
 #ifndef DLM_STORAGE_STRUCTS_H
 #define DLM_STORAGE_STRUCTS_H
 
-#include "..\\C-Utils\\base_types.h"
+#include "base_types.h"
 
 
 // Union for converting a double to a U64

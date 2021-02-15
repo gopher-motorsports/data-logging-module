@@ -14,6 +14,7 @@ RM := rm -rf
 -include Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/subdir.mk
 -include Middlewares/Third_Party/FreeRTOS/Source/subdir.mk
 -include Drivers/STM32F7xx_HAL_Driver/Src/subdir.mk
+-include DLM_code/Src/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
 -include C-Utils/subdir.mk
@@ -60,8 +61,8 @@ all: main-build
 main-build: Data_Logging_Module.elf secondary-outputs
 
 # Tool invocations
-Data_Logging_Module.elf: $(OBJS) $(USER_OBJS) C:\Users\hmoca\Desktop\gm-firmware\components\data-logging-module\STM32F767ZITX_FLASH.ld
-	arm-none-eabi-gcc -o "Data_Logging_Module.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"C:\Users\hmoca\Desktop\gm-firmware\components\data-logging-module\STM32F767ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Data_Logging_Module.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Data_Logging_Module.elf: $(OBJS) $(USER_OBJS) ../STM32F767ZITX_FLASH.ld
+	arm-none-eabi-gcc -o "Data_Logging_Module.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"../STM32F767ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Data_Logging_Module.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -82,7 +83,23 @@ Data_Logging_Module.bin: $(EXECUTABLES)
 
 # Other Targets
 clean:
-	-$(RM) *
+	-@rm ./*.elf -f
+	-@rm ./*.map -f
+	-@rm ./*.bin -f
+	-@rm ./C-Utils/*.o -f
+	-@rm ./C-Utils/*.su -f
+	-@rm ./Core/Src/*.o -f
+	-@rm ./Core/Src/*.su -f
+	-@rm ./Core/Startup/*.o -f
+	-@rm ./Core/Startup/*.su -f
+	-@rm ./DLM_code/Src/*.o -f
+	-@rm ./DLM_code/Src/*.su -f
+	-@rm ./Drivers/STM32F7xx_HAL_Driver/Src/*.o -f
+	-@rm ./Drivers/STM32F7xx_HAL_Driver/Src/*.su -f
+	-@rm ./gophercan-lib/*.o -f
+	-@rm ./gophercan-lib/*.su -f
+	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/*.o -f
+	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/*.su -f
 	-@echo ' '
 
 secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST) $(OBJCOPY_BIN)

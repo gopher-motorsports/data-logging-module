@@ -1,9 +1,8 @@
-gophercan-lib/GopherCAN.o: \
- C:/Users/hmoca/Desktop/gm-firmware/gophercan-lib/GopherCAN.c \
- C:/Users/hmoca/Desktop/gm-firmware/gophercan-lib/GopherCAN.h \
- C:/Users/hmoca/Desktop/gm-firmware/gophercan-lib/GopherCAN_structs.h \
- c:\users\hmoca\desktop\gm-firmware\c-utils\base_types.h \
- C:/Users/hmoca/Desktop/gm-firmware/gophercan-lib/GopherCAN_ring_buffer.h \
+gophercan-lib/GopherCAN.o: ../../../gophercan-lib/GopherCAN.c \
+ ../../../gophercan-lib/GopherCAN.h \
+ ../../../gophercan-lib/GopherCAN_structs.h \
+ ../../../gophercan-lib/../C-Utils/base_types.h \
+ ../../../gophercan-lib/GopherCAN_ring_buffer.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal.h \
  ../Core/Inc/stm32f7xx_hal_conf.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_rcc.h \
@@ -34,13 +33,13 @@ gophercan-lib/GopherCAN.o: \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_tim.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_tim_ex.h
 
-C:/Users/hmoca/Desktop/gm-firmware/gophercan-lib/GopherCAN.h:
+../../../gophercan-lib/GopherCAN.h:
 
-C:/Users/hmoca/Desktop/gm-firmware/gophercan-lib/GopherCAN_structs.h:
+../../../gophercan-lib/GopherCAN_structs.h:
 
-c:\users\hmoca\desktop\gm-firmware\c-utils\base_types.h:
+../../../gophercan-lib/../C-Utils/base_types.h:
 
-C:/Users/hmoca/Desktop/gm-firmware/gophercan-lib/GopherCAN_ring_buffer.h:
+../../../gophercan-lib/GopherCAN_ring_buffer.h:
 
 ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal.h:
 
