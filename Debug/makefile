@@ -61,8 +61,8 @@ all:
 main-build: Data_Logging_Module.elf secondary-outputs
 
 # Tool invocations
-Data_Logging_Module.elf: $(OBJS) $(USER_OBJS) ..\STM32F767ZITX_FLASH.ld
-	arm-none-eabi-gcc -o "Data_Logging_Module.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"..\STM32F767ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Data_Logging_Module.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Data_Logging_Module.elf: $(OBJS) $(USER_OBJS) ../STM32F767ZITX_FLASH.ld
+	arm-none-eabi-gcc -o "Data_Logging_Module.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"../STM32F767ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Data_Logging_Module.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -87,7 +87,7 @@ clean:
 	-@echo ' '
 
 pre-build:
-	find . -name "*.mk" -exec sed -i 's/C:\/Users\/hmoca\/Desktop\/gm-firmware/..\/..\/../g' {} +; find . -name "makefile" -exec sed -i 's/C:\\Users\\hmoca\\Desktop\\gm-firmware\\components\\data-logging-module\\/..\\/g' {} +; find . -name "*.d" -exec rm {} +
+	find . -name "*.mk" -exec sed -i 's/C:\/Users\/hmoca\/Desktop\/gm-firmware/..\/..\/../g' {} +; find . -name "makefile" -exec sed -i 's/C:\\Users\\hmoca\\Desktop\\gm-firmware\\components\\data-logging-module\\/..\//g' {} +; find . -name "*.d" -exec rm {} +
 	-@echo ' '
 
 secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST) $(OBJCOPY_BIN)
