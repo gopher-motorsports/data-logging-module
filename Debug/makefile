@@ -14,7 +14,6 @@ RM := rm -rf
 -include Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/subdir.mk
 -include Middlewares/Third_Party/FreeRTOS/Source/subdir.mk
 -include Drivers/STM32F7xx_HAL_Driver/Src/subdir.mk
--include DLM_code/Src/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
 -include C-Utils/subdir.mk
@@ -55,14 +54,15 @@ Data_Logging_Module.bin \
 
 
 # All Target
-all: main-build
+all:
+	+@$(MAKE) --no-print-directory pre-build && $(MAKE) --no-print-directory main-build
 
 # Main-build Target
 main-build: Data_Logging_Module.elf secondary-outputs
 
 # Tool invocations
-Data_Logging_Module.elf: $(OBJS) $(USER_OBJS) ../STM32F767ZITX_FLASH.ld
-	arm-none-eabi-gcc -o "Data_Logging_Module.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"../STM32F767ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Data_Logging_Module.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Data_Logging_Module.elf: $(OBJS) $(USER_OBJS) ..\STM32F767ZITX_FLASH.ld
+	arm-none-eabi-gcc -o "Data_Logging_Module.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"..\STM32F767ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Data_Logging_Module.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -83,40 +83,11 @@ Data_Logging_Module.bin: $(EXECUTABLES)
 
 # Other Targets
 clean:
-	-@rm ./*.elf -f
-	-@rm ./*.map -f
-	-@rm ./*.bin -f
-	-@rm ./C-Utils/*.o -f
-	-@rm ./C-Utils/*.su -f
-	-@rm ./C-Utils/*.d -f
-	-@rm ./Core/Src/*.o -f
-	-@rm ./Core/Src/*.su -f
-	-@rm ./Core/Src/*.d -f
-	-@rm ./Core/Startup/*.o -f
-	-@rm ./Core/Startup/*.su -f
-	-@rm ./Core/Startup/*.d -f
-	-@rm ./DLM_code/Src/*.o -f
-	-@rm ./DLM_code/Src/*.su -f
-	-@rm ./DLM_code/Src/*.d -f
-	-@rm ./Drivers/STM32F7xx_HAL_Driver/Src/*.o -f
-	-@rm ./Drivers/STM32F7xx_HAL_Driver/Src/*.su -f
-	-@rm ./Drivers/STM32F7xx_HAL_Driver/Src/*.d -f
-	-@rm ./gophercan-lib/*.o -f
-	-@rm ./gophercan-lib/*.su -f
-	-@rm ./gophercan-lib/*.d -f
-	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/*.o -f
-	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/*.su -f
-	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/*.d -f
-	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1/*.o -f
-	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1/*.su -f
-	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1/*.d -f
-	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/*.o -f
-	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/*.su -f
-	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/*.d -f
-	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/*.o -f
-	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/*.su -f
-	-@rm ./Middlewares/Third_Party/FreeRTOS/Source/*.d -f
+	-$(RM) *
+	-@echo ' '
 
+pre-build:
+	find . -name "*.mk" -exec sed -i 's/C:\/Users\/hmoca\/Desktop\/gm-firmware/..\/..\/../g' {} +; find . -name "makefile" -exec sed -i 's/C:\\Users\\hmoca\\Desktop\\gm-firmware\\components\\data-logging-module\\/..\\/g' {} +; find . -name "*.d" -exec rm {} +
 	-@echo ' '
 
 secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST) $(OBJCOPY_BIN)
@@ -129,6 +100,6 @@ warn-no-linker-script-specified:
 	@echo 'Warning: No linker script specified. Check the linker settings in the build configuration.'
 
 .PHONY: all clean dependents fail-specified-linker-script-missing warn-no-linker-script-specified
-.SECONDARY:
+.SECONDARY: main-build pre-build
 
 -include ../makefile.targets

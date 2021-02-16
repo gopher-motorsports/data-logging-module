@@ -42,6 +42,11 @@
 			<location>C:/Users/hmoca/Desktop/gm-firmware/gophercan-lib</location>
 		</link>
 		<link>
+			<name>sanatize.sh</name>
+			<type>1</type>
+			<location>C:/Users/hmoca/Desktop/gm-firmware/build-tools/sanatize.sh</location>
+		</link>
+		<link>
 			<name>Core/Src/dlm-high_level_functions.c</name>
 			<type>1</type>
 			<locationURI>PROJECT_LOC/DLM_code/Src/dlm-high_level_functions.c</locationURI>
