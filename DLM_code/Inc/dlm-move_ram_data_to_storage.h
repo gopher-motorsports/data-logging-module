@@ -14,10 +14,12 @@
 
 // function prototypes
 void move_ram_data_to_storage_init(DATA_INFO_NODE* storage_ptr);
-void write_data_to_storage();
+void write_data_to_storage(const char* file_name);
 void build_data_string(U8* data_str, DATA_INFO_NODE* data_node);
 double convert_data_to_dpf(DATA_INFO_NODE* data_node);
-void free_node_memory(DATA_INFO_NODE* data_node);
+void mount_usb(void);
+void unmount_usb(void);
+void check_usb_details(void);
 
 
 // defines
@@ -26,6 +28,9 @@ void free_node_memory(DATA_INFO_NODE* data_node);
 #define TIMESTAMP_SIZE 4
 #define DATA_SIZE 8
 #define DATA_POINT_STORAGE_SIZE STORAGE_PARAM_SIZE+TIMESTAMP_SIZE+DATA_SIZE
+
+#define USB_MOUNTED 1
+#define USB_NOT_MOUNTED 0
 
 
 #endif

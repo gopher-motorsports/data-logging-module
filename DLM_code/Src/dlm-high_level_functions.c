@@ -20,6 +20,7 @@
 #include "dlm-high_level_functions.h"
 #include "base_types.h"
 #include "GopherCAN.h"
+#include "usb_host.h"
 #include "dlm-storage_structs.h"
 #include "dlm-manage_data_aquisition.h"
 #include "dlm-move_ram_data_to_storage.h"
@@ -33,8 +34,6 @@ CAN_HandleTypeDef* dlm_hcan0;
 CAN_HandleTypeDef* dlm_hcan1;
 
 // get the tester variables
-extern U16_CAN_STRUCT rpm;
-extern U8_CAN_STRUCT fan_current;
 extern U8_CAN_STRUCT u8_tester;
 extern U16_CAN_STRUCT u16_tester;
 extern U32_CAN_STRUCT u32_tester;
@@ -46,6 +45,8 @@ extern S64_CAN_STRUCT s64_tester;
 extern FLOAT_CAN_STRUCT float_tester;
 
 U16 counter = 0;
+
+const char dlm_file_name[6] = "/TEST.txt";
 
 
 // dlm_init
@@ -120,14 +121,13 @@ void move_ram_data_to_storage()
 	// now it just writes every second
 	if (counter == 1000)
 	{
-		write_data_to_storage();
+		write_data_to_storage(dlm_file_name);
 		counter = 0;
 	}
 	else
 	{
 		counter++;
 	}
-
 }
 
 

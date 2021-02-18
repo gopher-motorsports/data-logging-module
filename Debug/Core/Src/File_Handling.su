@@ -1,0 +1,12 @@
+File_Handling.c:32:6:Send_Uart	16	static
+File_Handling.c:39:6:Mount_USB	8	static
+File_Handling.c:46:6:Unmount_USB	8	static
+File_Handling.c:54:9:Scan_USB	80	static
+File_Handling.c:97:9:Format_USB	64	static
+File_Handling.c:131:9:Write_File	40	static
+File_Handling.c:195:9:Read_File	48	static
+File_Handling.c:267:9:Create_File	40	static
+File_Handling.c:316:9:Update_File	48	static
+File_Handling.c:385:9:Remove_File	32	static
+File_Handling.c:420:9:Create_Dir	24	static
+File_Handling.c:440:6:Check_USB_Details	16	static

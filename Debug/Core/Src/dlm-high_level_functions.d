@@ -33,7 +33,9 @@ Core/Src/dlm-high_level_functions.o: \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_pwr_ex.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_tim.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_tim_ex.h \
- ../DLM_code/Inc/dlm-storage_structs.h \
+ ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_hcd.h \
+ ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_ll_usb.h \
+ ../USB_HOST/App/usb_host.h ../DLM_code/Inc/dlm-storage_structs.h \
  d:\github_files\c-utils\base_types.h \
  ../DLM_code/Inc/dlm-manage_data_aquisition.h \
  ../DLM_code/Inc/dlm-storage_structs.h \
@@ -108,6 +110,12 @@ d:\github_files\c-utils\base_types.h:
 ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_tim.h:
 
 ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_tim_ex.h:
+
+../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_hcd.h:
+
+../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_ll_usb.h:
+
+../USB_HOST/App/usb_host.h:
 
 ../DLM_code/Inc/dlm-storage_structs.h:
 

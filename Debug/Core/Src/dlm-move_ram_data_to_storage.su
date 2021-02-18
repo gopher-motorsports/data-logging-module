@@ -1,5 +1,7 @@
-dlm-move_ram_data_to_storage.c:19:6:move_ram_data_to_storage_init	16	static
-dlm-move_ram_data_to_storage.c:31:6:write_data_to_storage	32	static
-dlm-move_ram_data_to_storage.c:70:6:build_data_string	48	static
-dlm-move_ram_data_to_storage.c:100:8:convert_data_to_dpf	24	static
-dlm-move_ram_data_to_storage.c:146:6:free_node_memory	16	static
+dlm-move_ram_data_to_storage.c:41:6:move_ram_data_to_storage_init	16	static
+dlm-move_ram_data_to_storage.c:54:6:write_data_to_storage	48	static
+dlm-move_ram_data_to_storage.c:147:6:build_data_string	48	static
+dlm-move_ram_data_to_storage.c:177:8:convert_data_to_dpf	24	static
+dlm-move_ram_data_to_storage.c:221:6:mount_usb	16	static
+dlm-move_ram_data_to_storage.c:239:6:unmount_usb	16	static
+dlm-move_ram_data_to_storage.c:257:6:check_usb_details	8	static

@@ -7,7 +7,7 @@
 
 
 // Defines
-// TODO
+#define TESTER_FILE_NAME "/dlm_data.gdat"
 
 
 // Function prototypes
