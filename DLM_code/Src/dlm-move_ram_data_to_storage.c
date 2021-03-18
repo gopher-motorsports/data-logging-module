@@ -64,7 +64,6 @@ void write_data_to_storage(const char* file_name)
     	return;
     }
 
-    /*
     // check if the file exists
     fresult = f_stat(file_name, &USBHfno);
 	if (fresult != FR_OK)
@@ -87,7 +86,6 @@ void write_data_to_storage(const char* file_name)
 		    return;
 		}
 	}
-	*/
 
     // open the file
     fresult = f_open(&USBHFile, file_name, FA_OPEN_APPEND|FA_WRITE);
@@ -259,8 +257,8 @@ void check_usb_details(void)
     /* Check free space */
     f_getfree("", &fre_clust, &pUSBHFatFS);
 
-    total_space = (uint32_t)((pUSBHFatFS->n_fatent - 2) * pUSBHFatFS->csize * 0.5);
-    free_space = (uint32_t)(fre_clust * pUSBHFatFS->csize * 0.5);
+    total_space = (U32)((pUSBHFatFS->n_fatent - 2) * pUSBHFatFS->csize * 0.5);
+    free_space = (U32)(fre_clust * pUSBHFatFS->csize * 0.5);
 }
 
 
