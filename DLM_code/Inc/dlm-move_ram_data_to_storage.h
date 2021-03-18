@@ -14,7 +14,7 @@
 
 // function prototypes
 void move_ram_data_to_storage_init(DATA_INFO_NODE* storage_ptr);
-void write_data_to_storage(const char* file_name);
+S8 write_data_to_storage(const char* file_name);
 void build_data_string(U8* data_str, DATA_INFO_NODE* data_node);
 double convert_data_to_dpf(DATA_INFO_NODE* data_node);
 void mount_usb(void);
@@ -31,6 +31,11 @@ void check_usb_details(void);
 
 #define USB_MOUNTED 1
 #define USB_NOT_MOUNTED 0
+
+// error defines
+#define RAM_SUCCESS 0
+#define FILE_ERROR -1
+#define USB_NOT_MOUNTED_YET -2
 
 
 #endif

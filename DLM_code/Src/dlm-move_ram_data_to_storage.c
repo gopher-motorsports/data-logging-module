@@ -51,7 +51,7 @@ void move_ram_data_to_storage_init(DATA_INFO_NODE* storage_ptr)
 //  to the USB and deleting the node from the list. This function does not need to be thread
 //  safe as the STM32 is single threaded (except for RX and TX interrupts, which only affect
 //  the CAN buffers)
-void write_data_to_storage(const char* file_name)
+S8 write_data_to_storage(const char* file_name)
 {
 	FRESULT fresult;
     DATA_INFO_NODE* data_node_above = ram_data_head_ptr;
@@ -61,7 +61,7 @@ void write_data_to_storage(const char* file_name)
     // make sure the USB is mounted
     if (usb_mounted != USB_MOUNTED)
     {
-    	return;
+    	return USB_NOT_MOUNTED_YET;
     }
 
     // check if the file exists
@@ -74,7 +74,7 @@ void write_data_to_storage(const char* file_name)
 		{
 			// failed to create file
 			file_error_code = fresult;
-			return;
+			return FILE_ERROR;
 		}
 
 		// close it so it can later be opened in append mode
@@ -83,7 +83,7 @@ void write_data_to_storage(const char* file_name)
 		{
 			// failed to close the file
 			file_error_code = fresult;
-		    return;
+		    return FILE_ERROR;
 		}
 	}
 
@@ -94,7 +94,7 @@ void write_data_to_storage(const char* file_name)
     if (fresult != FR_OK)
     {
     	file_error_code = fresult;
-    	return;
+    	return FILE_ERROR;
     }
 
     // run through each data node in the RAM LL
@@ -110,7 +110,7 @@ void write_data_to_storage(const char* file_name)
         if (fresult != FR_OK)
         {
         	file_error_code = fresult;
-        	return;
+        	return FILE_ERROR;
         }
 
         // remove the pointer from the LL
@@ -131,8 +131,11 @@ void write_data_to_storage(const char* file_name)
     if (fresult != FR_OK)
     {
     	file_error_code = fresult;
-    	return;
+    	return FILE_ERROR;
     }
+
+    // everything worked. Return
+    return RAM_SUCCESS;
 }
 
 

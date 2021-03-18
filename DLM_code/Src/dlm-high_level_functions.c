@@ -46,7 +46,7 @@ extern FLOAT_CAN_STRUCT float_tester;
 
 U16 counter = 0;
 
-const char dlm_file_name[6] = "/TEST.txt";
+const char dlm_file_name[9] = "/TEST.txt";
 
 
 // dlm_init
@@ -121,7 +121,7 @@ void move_ram_data_to_storage()
 	// now it just writes every second
 	if (counter == 1000)
 	{
-		//write_data_to_storage(dlm_file_name);
+		write_data_to_storage(dlm_file_name);
 		counter = 0;
 	}
 	else

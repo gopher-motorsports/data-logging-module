@@ -113,7 +113,7 @@ static void USBH_UserProcess  (USBH_HandleTypeDef *phost, uint8_t id)
   // TODO write_data_to_storage works fine if it is here, so possibly a timing issue
   // TODO the parent to this function gets killed by RTOS, unsure why
 
-  write_data_to_storage("yo_yo_yo.txt");
+  //write_data_to_storage("yo_yo_yo.txt");
 
   break;
 
