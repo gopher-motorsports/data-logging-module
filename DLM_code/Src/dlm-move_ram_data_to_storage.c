@@ -16,25 +16,13 @@ DATA_INFO_NODE* ram_data_head_ptr;
 extern U8 parameter_data_types[NUM_OF_PARAMETERS];
 
 // File handling externs
-extern char USBHPath[4];   // USBH logical drive path
-extern FATFS USBHFatFS;    // File system object for USBH logical drive
-extern FIL USBHFile;       // File object for USBH
+extern char SDPath[4];				// path to the SD card
+extern FATFS SDFatFS;				// file system struct
+extern FIL SDFile;					// singular file struct
 
-// a specific file's details
-FILINFO USBHfno;
-
-// capacity related
-FATFS *pUSBHFatFS;
-U32 fre_clust;
-U32 total_space;
-U32 free_space;
-U16 bytes_written = 0;
-
-// Error codes for the USB host
+// SD related variables
 FRESULT file_error_code = FR_OK;
-
-// variable for if the USB is actually mounted
-U8 usb_mounted = USB_NOT_MOUNTED;
+U32 bytes_written;
 
 // move_ram_data_to_storage_init
 //  TODO DOCS
@@ -42,7 +30,9 @@ void move_ram_data_to_storage_init(DATA_INFO_NODE* storage_ptr)
 {
     ram_data_head_ptr = storage_ptr;
 
-    // TODO file name, metadata, lots of other things im sure
+    // TODO try to mount the SD or make notes about its status
+
+    // TODO Init the file? possibly do it when beginning the logging session instead
 }
 
 
@@ -58,37 +48,21 @@ S8 write_data_to_storage(const char* file_name)
     DATA_INFO_NODE* data_node = ram_data_head_ptr->next;
     U8 data_point_str[DATA_POINT_STORAGE_SIZE];
 
-    // make sure the USB is mounted
-    if (usb_mounted != USB_MOUNTED)
+    // make sure the SD is mounted
+    // TODO replace this with something better, some logic to check if the SD is already mounted
+    // Third arg as 1 means mount immediately, 0 means delayed mount
+    fresult = f_mount(&SDFatFS, SDPath, 1);
+
+    // TODO check if the error is FR_DISK_ERR (means the sd card is not inserted)
+
+    // open the file. This will create a new file if it does not already exist, but it should as the file
+    // metadata should already be there
+    fresult = f_open(&SDFile, file_name, FA_CREATE_NEW|FA_OPEN_APPEND|FA_WRITE);
+
+    if (fresult == FR_EXIST)
     {
-    	return USB_NOT_MOUNTED_YET;
+    	fresult = f_open(&SDFile, file_name, FA_OPEN_APPEND|FA_WRITE);
     }
-
-    // check if the file exists
-    fresult = f_stat(file_name, &USBHfno);
-	if (fresult != FR_OK)
-	{
-		// the file does not exist. Create it then close it
-		fresult = f_open(&USBHFile, file_name, FA_CREATE_NEW|FA_READ|FA_WRITE);
-		if (fresult != FR_OK)
-		{
-			// failed to create file
-			file_error_code = fresult;
-			return FILE_ERROR;
-		}
-
-		// close it so it can later be opened in append mode
-		fresult = f_close(&USBHFile);
-		if (fresult != FR_OK)
-		{
-			// failed to close the file
-			file_error_code = fresult;
-		    return FILE_ERROR;
-		}
-	}
-
-    // open the file
-    fresult = f_open(&USBHFile, file_name, FA_OPEN_APPEND|FA_WRITE);
 
     // check to make sure the file actually opened
     if (fresult != FR_OK)
@@ -104,7 +78,7 @@ S8 write_data_to_storage(const char* file_name)
         build_data_string(data_point_str, data_node);
 
         // append the file with this new string
-        fresult = f_write(&USBHFile, data_point_str, DATA_POINT_STORAGE_SIZE, (UINT*)(&bytes_written));
+        fresult = f_write(&SDFile, data_point_str, DATA_POINT_STORAGE_SIZE, (UINT*)(&bytes_written));
 
         // check if the writing was successful
         if (fresult != FR_OK)
@@ -125,7 +99,7 @@ S8 write_data_to_storage(const char* file_name)
     }
 
     // close the file
-    fresult = f_close(&USBHFile);
+    fresult = f_close(&SDFile);
 
     // make sure the file was actually closed
     if (fresult != FR_OK)
@@ -133,6 +107,9 @@ S8 write_data_to_storage(const char* file_name)
     	file_error_code = fresult;
     	return FILE_ERROR;
     }
+
+    // unmount SD. TODO this will not be needed when there is better logic for the SD card
+    fresult = f_mount(&SDFatFS, NULL, 1);
 
     // everything worked. Return
     return RAM_SUCCESS;
@@ -214,54 +191,6 @@ double convert_data_to_dpf(DATA_INFO_NODE* data_node)
 
     // this coude should not be reached, this is to make the compiler happy
     return 0;
-}
-
-
-// mount_usb
-//  TODO DOCS
-void mount_usb(void)
-{
-	// attempt to mount the USB
-	FRESULT fresult = f_mount(&USBHFatFS, USBHPath, 1);
-
-	// if there is an error, set the error code to the global variable
-	if (fresult != FR_OK)
-	{
-		file_error_code = fresult;
-	}
-
-	// note the USB has been mounted
-	usb_mounted = USB_MOUNTED;
-}
-
-
-// unmount_usb
-//  TODO DOCS
-void unmount_usb(void)
-{
-	// attempt to unmount
-	FRESULT fresult = f_mount(NULL, USBHPath, 1);
-
-	// if there is an error, set the error code to the global variable
-	if (fresult != FR_OK)
-	{
-		file_error_code = fresult;
-	}
-
-	// note the USB has been removed
-	usb_mounted = USB_NOT_MOUNTED;
-}
-
-
-// check_usb_details
-//  TODO DOCS
-void check_usb_details(void)
-{
-    /* Check free space */
-    f_getfree("", &fre_clust, &pUSBHFatFS);
-
-    total_space = (U32)((pUSBHFatFS->n_fatent - 2) * pUSBHFatFS->csize * 0.5);
-    free_space = (U32)(fre_clust * pUSBHFatFS->csize * 0.5);
 }
 
 

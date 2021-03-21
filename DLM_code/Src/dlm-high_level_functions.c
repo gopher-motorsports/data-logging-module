@@ -20,13 +20,13 @@
 #include "dlm-high_level_functions.h"
 #include "base_types.h"
 #include "GopherCAN.h"
-#include "usb_host.h"
 #include "dlm-storage_structs.h"
 #include "dlm-manage_data_aquisition.h"
 #include "dlm-move_ram_data_to_storage.h"
 
 
 // Global Variables
+// this is the head node for the RAM data linked list
 DATA_INFO_NODE ram_data = {0, 0, NULL};
 
 // the HAL_CAN structs
@@ -44,9 +44,9 @@ extern S32_CAN_STRUCT s32_tester;
 extern S64_CAN_STRUCT s64_tester;
 extern FLOAT_CAN_STRUCT float_tester;
 
+// TODO these are for testing RAM-to-storage. Do better
 U16 counter = 0;
-
-const char dlm_file_name[9] = "/TEST.txt";
+const char dlm_file_name[] = "/long_test.txt";
 
 
 // dlm_init

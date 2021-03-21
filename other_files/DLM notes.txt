@@ -33,6 +33,7 @@ move_ram_data_to_storage:
  [x] TEST memory usage
  [x] TEST for memory leaks by running for a very long time with lots of data aquisition
  [x] TEST data string builder to make sure it does everything correctly - check casting for each data type
+ [_] TEST what happends with a full SD card
 
 
 NOTES:
@@ -44,5 +45,6 @@ move_ram_data_to_storage:
  - All data is stored as a dpf in the USB storage, https://blog.demofox.org/2017/11/21/floating-point-precision/ has a good table showing the precision of this storage method
     For integers, +/-2^53 can be stored
  - This causes each data point to be 14B, and if 1000 data points are collected per second this takes ~840kB per minute
-
-
+ - There is a hang if the SD card is removed without being unmounted, but it is resolved after the FATfs timeout
+ - Did not work with a SDHC card (gives DISK_ERR), but 2GB should be plenty for a drive day
+ - File name must be a .txt
