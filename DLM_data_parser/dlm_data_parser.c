@@ -76,6 +76,7 @@ int convert_gdat_to_csv(FILE* gdat, FILE* csv)
     // big loop for reading the file
     while (1)
     {
+        // attempt to read. If there is no more to be read, it will return 0 and leave the loop
         if (fread(datapoint, TOTAL_SIZE, sizeof(char), gdat) == 0)
         {
             return PARSER_SUCCESS;
@@ -110,7 +111,7 @@ int convert_gdat_to_csv(FILE* gdat, FILE* csv)
         fprintf(csv, "%u, %u, %f\n", param, timestamp, data.d);
 
         // print out what we added to the file
-        printf("%u, %u, %f\n", param, timestamp, data.d);
+        //printf("%u, %u, %f\n", param, timestamp, data.d);
     }
 
     return PARSER_SUCCESS;
