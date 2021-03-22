@@ -7,6 +7,7 @@
 
 // includes
 #include <stdio.h>
+#include <stdint.h>
 
 // converting to double union
 // Union for converting a double to a U64
@@ -17,8 +18,7 @@ typedef union
 } DPF_CONVERTER;
 
 // general defines
-#define NULL ((void*)0)
-#define FILE_NAME_MAX_LEN 100;
+#define FILE_NAME_MAX_LEN 100
 #define PARAM_ID_SIZE 2
 #define TIMESTAMP_SIZE 4
 #define DATA_SIZE 8
@@ -26,7 +26,7 @@ typedef union
 
 // return defines
 #define PARSER_SUCCESS 0
-#define BAD_ARG_INPUTTED -1
+#define INCORRECT_ARG_INPUTTED -1
 #define FAILED_TO_OPEN -2
 #define CONVERSION_FAILED -3
 

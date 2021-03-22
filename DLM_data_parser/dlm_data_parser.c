@@ -21,20 +21,26 @@ int main(int argc, char* argv[])
     if (argc <= 2)
     {
         printf("Incorrect arguments inputted\n");
-        #define BAD_ARG_INPUTTED;
+        return INCORRECT_ARG_INPUTTED;
     }
 
     // set the two file names
-    strcpy(argv[1], gdat_file_name);
-    strcpy(argv[2], csv_file_name);
+    strcpy(gdat_file_name, argv[1]);
+    strcpy(csv_file_name, argv[2]);
 
     // open the input and ouput files
     gdat_file = fopen(gdat_file_name, "r");
     csv_file = fopen(csv_file_name, "w");
 
-    if (gdat_file == NULL || csv_file == NULL)
+    if (gdat_file == NULL)
     {
-        printf("Failed to open file\n");
+        printf("Failed to open file: %s\n", gdat_file_name);
+        return FAILED_TO_OPEN;
+    }
+
+    if (csv_file == NULL)
+    {
+        printf("Failed to open file: %s\n", csv_file_name);
         return FAILED_TO_OPEN;
     }
 
@@ -60,41 +66,54 @@ int convert_gdat_to_csv(FILE* gdat, FILE* csv)
     uint16_t param = 0;
     uint32_t timestamp = 0;
     DPF_CONVERTER data;
-    int c;
-
     data.u64 = 0;
 
     // copy the file header/metadata
     // TODO
 
-    fprintf("Parameter ID, Timestamp, Data;\n", csv);
+    fprintf(csv, "Parameter ID, Timestamp, Data\n");
 
-    // big while loop for reading the file
-    while (fread(datapoint, TOTAL_SIZE, sizeof(char), gdat) != EOF)
+    // big loop for reading the file
+    while (1)
     {
+        if (fread(datapoint, TOTAL_SIZE, sizeof(char), gdat) == 0)
+        {
+            return PARSER_SUCCESS;
+        }
+
+        // reset the integers
+        param = 0;
+        timestamp = 0;
+        data.u64 = 0;
+
         // get the param_id
-        param |= ((uint16_t)(datapoint[0]));
-        param |= ((uint16_t)(datapoint[1]) << 8);
+        param |= ((uint16_t)(datapoint[1]));
+        param |= ((uint16_t)(datapoint[0]) << 8);
 
         // get the timestamp
-        timestamp |= ((uint16_t)(datapoint[2]));
-        timestamp |= ((uint16_t)(datapoint[3]) << (8*1));
-        timestamp |= ((uint16_t)(datapoint[4]) << (8*2));
-        timestamp |= ((uint16_t)(datapoint[5]) << (8*3));
+        timestamp |= ((uint32_t)(datapoint[5]));
+        timestamp |= ((uint32_t)(datapoint[4]) << (8*1));
+        timestamp |= ((uint32_t)(datapoint[3]) << (8*2));
+        timestamp |= ((uint32_t)(datapoint[2]) << (8*3));
 
         // get the datapoint
-        data.u64 |= ((uint16_t)(datapoint[6]));
-        data.u64 |= ((uint16_t)(datapoint[7]) << (8*1));
-        data.u64 |= ((uint16_t)(datapoint[8]) << (8*2));
-        data.u64 |= ((uint16_t)(datapoint[9]) << (8*3));
-        data.u64 |= ((uint16_t)(datapoint[10]) << (8*4));
-        data.u64 |= ((uint16_t)(datapoint[11]) << (8*5));
-        data.u64 |= ((uint16_t)(datapoint[12]) << (8*6));
-        data.u64 |= ((uint16_t)(datapoint[13]) << (8*7));
+        data.u64 |= ((uint64_t)(datapoint[13]));
+        data.u64 |= ((uint64_t)(datapoint[12]) << (8*1));
+        data.u64 |= ((uint64_t)(datapoint[11]) << (8*2));
+        data.u64 |= ((uint64_t)(datapoint[10]) << (8*3));
+        data.u64 |= ((uint64_t)(datapoint[9]) << (8*4));
+        data.u64 |= ((uint64_t)(datapoint[8]) << (8*5));
+        data.u64 |= ((uint64_t)(datapoint[7]) << (8*6));
+        data.u64 |= ((uint64_t)(datapoint[6]) << (8*7));
 
         // write all that data into the CSV
-        fprintf(csv, "%d, %d, %f", param, timestamp, data.d);
+        fprintf(csv, "%u, %u, %f\n", param, timestamp, data.d);
+
+        // print out what we added to the file
+        printf("%u, %u, %f\n", param, timestamp, data.d);
     }
+
+    return PARSER_SUCCESS;
 }
 
 // End of dlm_data_parser.c
