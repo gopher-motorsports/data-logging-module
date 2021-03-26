@@ -34,6 +34,12 @@ move_ram_data_to_storage:
  [x] TEST for memory leaks by running for a very long time with lots of data aquisition
  [x] TEST data string builder to make sure it does everything correctly - check casting for each data type
  [_] TEST what happends with a full SD card
+ [_] TEST a removed SD card
+ [_] TEST to make sure a SD card can be inserted late
+ [_] TEST a duplicate file name (should append a number to it until it works)
+ [_] TEST removing an SD card (should unmount the SD card and wait until a new one is inserted)
+ [_] TEST removing and reinserting an SD card (should unmount and start a new file)
+ [_] TEST a very long filename (more than 200 chars) 
 
 
 NOTES:

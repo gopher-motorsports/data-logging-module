@@ -1,5 +1,7 @@
 // dlm-move_ram_data_to_storage.c
-//  TODO DOCS
+//  This file handles moving data stored in the RAM buffer to an off-chip storage medium, in
+//  this case an SD card. This file also has code to mount the SD card and make a new file
+//  with a unique name for logging
 
 
 // self include
@@ -23,49 +25,87 @@ extern FIL SDFile;					// singular file struct
 // SD related variables
 FRESULT file_error_code = FR_OK;
 U32 bytes_written;
+const char* orig_file_name;			// needed for if the file did not open the first time
+char file_name[MAX_FILENAME_SIZE];
+S8 sd_status = SD_NOT_MOUNTED;
 
 // move_ram_data_to_storage_init
-//  TODO DOCS
-void move_ram_data_to_storage_init(DATA_INFO_NODE* storage_ptr)
+//  This function sets the local pointers to the correct values, then attempts to mount the
+//  SD card and create the storage file
+void move_ram_data_to_storage_init(DATA_INFO_NODE* storage_ptr, const char* filename)
 {
     ram_data_head_ptr = storage_ptr;
+    orig_file_name = filename;
 
-    // TODO try to mount the SD or make notes about its status
+    // try to mount the SD card
+    if (mount_sd_card())
+    {
+    	return;
+    }
 
-    // TODO Init the file? possibly do it when beginning the logging session instead
+    // open the file, creating a new name if it already exists
+    if (create_new_file(filename))
+    {
+    	// failed to create a new file. Unmount the SD card
+    	f_mount(NULL, SDPath, 1);
+    }
+}
+
+
+// write_data_and_handle_errors
+//  this function will call write_data_to_storage, and handle file errors by unmounting the
+//  SD card
+void write_data_and_handle_errors()
+{
+	if (write_data_to_storage() == FILE_ERROR)
+	{
+		// unmount the SD card and try to mount it again next cycle
+		f_mount(NULL, SDPath, 1);
+	}
+
+	// TODO toggle the onboard LED every successful file write
 }
 
 
 // write_data_to_storage
 //  Function to run through each data node in the ram_data linked list while adding the data
-//  to the USB and deleting the node from the list. This function does not need to be thread
+//  to the SD card and deleting the node from the list. This function does not need to be thread
 //  safe as the STM32 is single threaded (except for RX and TX interrupts, which only affect
 //  the CAN buffers)
-S8 write_data_to_storage(const char* file_name)
+S8 write_data_to_storage()
 {
 	FRESULT fresult;
     DATA_INFO_NODE* data_node_above = ram_data_head_ptr;
     DATA_INFO_NODE* data_node = ram_data_head_ptr->next;
     U8 data_point_str[DATA_POINT_STORAGE_SIZE];
 
-    // make sure the SD is mounted
-    // TODO replace this with something better, some logic to check if the SD is already mounted
-    // Third arg as 1 means mount immediately, 0 means delayed mount
-    fresult = f_mount(&SDFatFS, SDPath, 1);
-
-    // TODO check if the error is FR_DISK_ERR (means the sd card is not inserted)
-
-    // open the file. This will create a new file if it does not already exist, but it should as the file
-    // metadata should already be there
-    fresult = f_open(&SDFile, file_name, FA_CREATE_NEW|FA_OPEN_APPEND|FA_WRITE);
-
-    if (fresult == FR_EXIST)
+    // check if the SD card is mounted
+    if (sd_status != SD_MOUNTED)
     {
-    	fresult = f_open(&SDFile, file_name, FA_OPEN_APPEND|FA_WRITE);
+    	// check if there was an SD error
+    	if (sd_status != SD_NOT_MOUNTED)
+    	{
+    		// if there is an SD error, return without trying to mount again
+    		return SD_ERROR;
+    	}
+
+    	// try again to mount the SD card. If it fails, return
+		if (mount_sd_card())
+		{
+			return SD_MOUNTING_ERROR;
+		}
+
+		// if the code reaches this point, the SD should be mounted with a new file made. Create
+		// a new file for the log file
+		if (create_new_file(orig_file_name))
+		{
+			// there was an error creating the file. Return
+			return FILE_ERROR;
+		}
     }
 
-    // check to make sure the file actually opened
-    if (fresult != FR_OK)
+    // open the file. Mounting the sd card also will create the file
+    if ((fresult = f_open(&SDFile, file_name, FA_OPEN_APPEND|FA_WRITE)) != FR_OK)
     {
     	file_error_code = fresult;
     	return FILE_ERROR;
@@ -78,10 +118,7 @@ S8 write_data_to_storage(const char* file_name)
         build_data_string(data_point_str, data_node);
 
         // append the file with this new string
-        fresult = f_write(&SDFile, data_point_str, DATA_POINT_STORAGE_SIZE, (UINT*)(&bytes_written));
-
-        // check if the writing was successful
-        if (fresult != FR_OK)
+        if ((fresult = f_write(&SDFile, data_point_str, DATA_POINT_STORAGE_SIZE, (UINT*)(&bytes_written))) != FR_OK)
         {
         	file_error_code = fresult;
         	return FILE_ERROR;
@@ -107,9 +144,6 @@ S8 write_data_to_storage(const char* file_name)
     	file_error_code = fresult;
     	return FILE_ERROR;
     }
-
-    // unmount SD. TODO this will not be needed when there is better logic for the SD card
-    fresult = f_mount(&SDFatFS, NULL, 1);
 
     // everything worked. Return
     return RAM_SUCCESS;
@@ -151,7 +185,7 @@ void build_data_string(U8 data_str[], DATA_INFO_NODE* data_node)
 // convert_data_to_dpf
 //  Function to take in a data node, get the data stored in it, and return
 //  the double precision float representation of that value to be stored on
-//  the external USB
+//  the external SD card
 double convert_data_to_dpf(DATA_INFO_NODE* data_node)
 {
     // switch to get the data out of the data_node
@@ -191,6 +225,81 @@ double convert_data_to_dpf(DATA_INFO_NODE* data_node)
 
     // this coude should not be reached, this is to make the compiler happy
     return 0;
+}
+
+
+// mount_sd_card
+//  this function will try to mount the SD card
+S8 mount_sd_card()
+{
+	FRESULT fresult;
+
+	// attempt to mount the card
+	fresult = f_mount(&SDFatFS, SDPath, 1);
+
+	// check if the error is FR_DISK_ERR (means the SD card is not inserted)
+	if (fresult == FR_DISK_ERR)
+	{
+		file_error_code = fresult;
+		sd_status = SD_NOT_MOUNTED;
+		return sd_status;
+	}
+
+	// check if another error has occurred
+	else if (fresult != FR_OK)
+	{
+		file_error_code = fresult;
+		sd_status = SD_MOUNTING_ERROR;
+		return sd_status;
+	}
+
+	// the mounting worked
+	sd_status = SD_MOUNTED;
+	return sd_status;
+}
+
+
+// create_new_file
+//  this function will create a new file for the DLM to write to, appending numbers to the end
+//  of the file name if needed. This function will modify file_name as needed
+S8 create_new_file(const char* filename)
+{
+	FRESULT fresult;
+	U8 c = 0;
+	U16 append_val = 0;
+
+	// save the original file name. This is basically strcpy but with the DLM max filename size
+	do {
+		// check if the filename is too long
+		if (c >= MAX_FILENAME_SIZE)
+		{
+			// terminate the filename at the max length
+			file_name[MAX_FILENAME_SIZE - 1] = '\0';
+		}
+
+		// copy this character
+		file_name[c] = filename[c];
+	} while (filename[c] != '\0');
+
+	// open the file
+	fresult = f_open(&SDFile, file_name, FA_CREATE_NEW|FA_WRITE);
+
+	// if this filename is already taken, append a number on it and try again until it works
+	while (fresult == FR_EXIST)
+	{
+		// put a number on it, then try again
+		// TODO
+	}
+
+	// check to make sure there wasn't an error
+	if (fresult != FR_OK)
+	{
+		file_error_code = fresult;
+		return FILE_ERROR;
+	}
+
+	// everything worked. Return
+	return RAM_SUCCESS;
 }
 
 

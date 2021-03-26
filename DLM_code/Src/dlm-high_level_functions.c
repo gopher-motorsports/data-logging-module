@@ -44,9 +44,10 @@ extern S32_CAN_STRUCT s32_tester;
 extern S64_CAN_STRUCT s64_tester;
 extern FLOAT_CAN_STRUCT float_tester;
 
-// TODO these are for testing RAM-to-storage. Do better
+// TODO these are for testing RAM-to-storage. Do better. Prob use the date from the RTC to
+// build the filename
 U16 counter = 0;
-const char dlm_file_name[] = "/long_test.txt";
+const char dlm_file_name[] = "/long_test001.txt";
 
 
 // dlm_init
@@ -84,7 +85,7 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr0, CAN_HandleTypeDef* hcan_ptr1)
 	float_tester.update_enabled = TRUE;
 
     manage_data_aquisition_init(&ram_data);
-    move_ram_data_to_storage_init(&ram_data);
+    move_ram_data_to_storage_init(&ram_data, dlm_file_name);
 }
 
 
@@ -121,7 +122,7 @@ void move_ram_data_to_storage()
 	// now it just writes every second
 	if (counter == 1000)
 	{
-		write_data_to_storage(dlm_file_name);
+		write_data_and_handle_errors();
 		counter = 0;
 	}
 	else
