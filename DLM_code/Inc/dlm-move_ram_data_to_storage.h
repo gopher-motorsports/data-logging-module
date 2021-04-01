@@ -37,7 +37,8 @@ typedef enum
 {
 	SD_MOUNTED = 0,
 	SD_NOT_MOUNTED = -1,
-	SD_MOUNTING_ERROR = -2
+	SD_MOUNTING_ERROR = -2,
+	SD_NOT_INSERTED = -3
 } SD_STATUS;
 
 // error defines

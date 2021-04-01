@@ -46,8 +46,7 @@ extern FLOAT_CAN_STRUCT float_tester;
 
 // TODO these are for testing RAM-to-storage. Do better. Prob use the date from the RTC to
 // build the filename
-U16 counter = 0;
-const char dlm_file_name[] = "/very_long_test.gdat";
+const char dlm_file_name[] = "/logging_test.gdat";
 
 
 // dlm_init
@@ -120,15 +119,7 @@ void move_ram_data_to_storage()
 {
     // TODO Use some logic to determine when the best time is to write to storage. Right
 	// now it just writes every second
-	if (counter == 1000)
-	{
-		write_data_and_handle_errors();
-		counter = 0;
-	}
-	else
-	{
-		counter++;
-	}
+	write_data_and_handle_errors();
 }
 
 

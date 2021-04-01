@@ -79,6 +79,7 @@ S8 write_data_and_handle_errors()
 	{
 		// unmount the SD card and try to mount it again next cycle
 		f_mount(NULL, SDPath, 1);
+		sd_status = SD_NOT_MOUNTED;
 		return FILE_ERROR;
 	}
 
@@ -244,10 +245,21 @@ S8 mount_sd_card()
 {
 	FRESULT fresult;
 
+	// check if the SD card is even inserted using the GPIOpin
+	if (HAL_GPIO_ReadPin(SD_Detected_GPIO_Port, SD_Detected_Pin) == GPIO_PIN_RESET)
+	{
+		// the SD is not inserted. Do not try to mount as it can cause a hardfault
+		sd_status = SD_NOT_INSERTED;
+		return SD_NOT_INSERTED;
+
+		// This logic replaces the FATfs logic for checking the SD card, that is why there is a warning
+		// when auto-generating code for SD
+	}
+
 	// attempt to mount the card
 	fresult = f_mount(&SDFatFS, SDPath, 1);
 
-	// check if the error is FR_DISK_ERR (means the SD card is not inserted)
+	// check if the error is FR_DISK_ERR
 	if (fresult == FR_DISK_ERR || fresult == FR_NOT_READY)
 	{
 		file_error_code = fresult;

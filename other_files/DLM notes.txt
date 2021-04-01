@@ -17,6 +17,8 @@ manage_data_aquisition:
  - TX_CAN_MESSAGE errors (full buffers)
 
 move_ram_data_to_storage:
+ - SD card must be inserted on boot and cannot be removed without loosing logging until reboot
+ - cubeMX gives an warning about the SD_detected pin (part of FATfs), but this is ok because the logic in place is better because it actually works
 
 
 TESTS:
@@ -42,7 +44,7 @@ move_ram_data_to_storage:
  [_] TEST removing an SD card (should unmount the SD card and wait until a new one is inserted)
  [_] TEST removing and reinserting an SD card (should unmount and start a new file)
  [_] TEST a very long filename (more than 200 chars, should throw an error)
- [_] TEST if there are too many files with the same name (decrease MAX_APPEND_NUM)
+ [_] TEST if there are too many files with the same name (decrease MAX_APPEND_NUM to test)
  [_] TEST logging for a long time, good way to test for stability
  [_] MAKE SURE THERE ARE NEVER ANY HARDFAULTS
 
@@ -61,6 +63,5 @@ move_ram_data_to_storage:
  - SD card must be inserted at boot and cannot be hot-swapped
  
 CURRENT TEST:
- - Trying to find why things fail / hardfault
-  
+
   

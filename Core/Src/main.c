@@ -370,7 +370,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin : SD_Detected_Pin */
   GPIO_InitStruct.Pin = SD_Detected_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(SD_Detected_GPIO_Port, &GPIO_InitStruct);
 
 }
@@ -430,8 +430,8 @@ void move_ram_to_sd(void const * argument)
   /* Infinite loop */
   for(;;)
   {
+	  osDelay(1000);
 	  move_ram_data_to_storage();
-    osDelay(1);
   }
   /* USER CODE END move_ram_to_sd */
 }
