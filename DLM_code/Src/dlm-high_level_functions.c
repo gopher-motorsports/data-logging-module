@@ -26,6 +26,7 @@
 
 
 // Global Variables
+// this is the head node for the RAM data linked list
 DATA_INFO_NODE ram_data = {0, 0, NULL};
 
 // the HAL_CAN structs
@@ -33,8 +34,6 @@ CAN_HandleTypeDef* dlm_hcan0;
 CAN_HandleTypeDef* dlm_hcan1;
 
 // get the tester variables
-extern U16_CAN_STRUCT rpm;
-extern U8_CAN_STRUCT fan_current;
 extern U8_CAN_STRUCT u8_tester;
 extern U16_CAN_STRUCT u16_tester;
 extern U32_CAN_STRUCT u32_tester;
@@ -45,7 +44,9 @@ extern S32_CAN_STRUCT s32_tester;
 extern S64_CAN_STRUCT s64_tester;
 extern FLOAT_CAN_STRUCT float_tester;
 
-U16 counter = 0;
+// TODO these are for testing RAM-to-storage. Do better. Prob use the date from the RTC to
+// build the filename
+const char dlm_file_name[] = "/logging_test.gdat";
 
 
 // dlm_init
@@ -83,7 +84,7 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr0, CAN_HandleTypeDef* hcan_ptr1)
 	float_tester.update_enabled = TRUE;
 
     manage_data_aquisition_init(&ram_data);
-    move_ram_data_to_storage_init(&ram_data);
+    move_ram_data_to_storage_init(&ram_data, dlm_file_name);
 }
 
 
@@ -118,16 +119,7 @@ void move_ram_data_to_storage()
 {
     // TODO Use some logic to determine when the best time is to write to storage. Right
 	// now it just writes every second
-	if (counter == 1000)
-	{
-		write_data_to_storage();
-		counter = 0;
-	}
-	else
-	{
-		counter++;
-	}
-
+	write_data_and_handle_errors();
 }
 
 

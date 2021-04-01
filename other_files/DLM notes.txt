@@ -17,6 +17,8 @@ manage_data_aquisition:
  - TX_CAN_MESSAGE errors (full buffers)
 
 move_ram_data_to_storage:
+ - SD card must be inserted on boot and cannot be removed without loosing logging until reboot
+ - cubeMX gives an warning about the SD_detected pin (part of FATfs), but this is ok because the logic in place is better because it actually works
 
 
 TESTS:
@@ -28,11 +30,23 @@ manage_data_aquisition:
  [x] TEST adding every data point to storage
  [_] TEST parameters with IDs greater than 255
  [_] TEST bucket request intervals greater than 255
+ [_] TEST missing add_param_to_bucket message
+ [_] TEST missing set_bucket_size message
 
 move_ram_data_to_storage:
  [x] TEST memory usage
  [x] TEST for memory leaks by running for a very long time with lots of data aquisition
  [x] TEST data string builder to make sure it does everything correctly - check casting for each data type
+ [_] TEST what happends with a full SD card
+ [f] TEST a removed SD card
+ [f] TEST to make sure a SD card can be inserted late
+ [x] TEST a duplicate file name (should append a number to it until it works)
+ [_] TEST removing an SD card (should unmount the SD card and wait until a new one is inserted)
+ [_] TEST removing and reinserting an SD card (should unmount and start a new file)
+ [_] TEST a very long filename (more than 200 chars, should throw an error)
+ [_] TEST if there are too many files with the same name (decrease MAX_APPEND_NUM to test)
+ [_] TEST logging for a long time, good way to test for stability
+ [_] MAKE SURE THERE ARE NEVER ANY HARDFAULTS
 
 
 NOTES:
@@ -44,5 +58,10 @@ move_ram_data_to_storage:
  - All data is stored as a dpf in the USB storage, https://blog.demofox.org/2017/11/21/floating-point-precision/ has a good table showing the precision of this storage method
     For integers, +/-2^53 can be stored
  - This causes each data point to be 14B, and if 1000 data points are collected per second this takes ~840kB per minute
+ - There is a hang if the SD card is removed without being unmounted, but it is resolved after the FATfs timeout
+ - Did not work with a SDHC card (gives DISK_ERR), but 2GB should be plenty for a drive day
+ - SD card must be inserted at boot and cannot be hot-swapped
+ 
+CURRENT TEST:
 
-
+  

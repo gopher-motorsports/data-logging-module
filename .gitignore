@@ -1,0 +1,10 @@
+
+.settings/*
+Debug/*
+.cproject
+.project
+.mxproject
+
+Data_Logging_Module.launch
+STM32F767ZITX_FLASH.ld
+STM32F767ZITX_RAM.ld
