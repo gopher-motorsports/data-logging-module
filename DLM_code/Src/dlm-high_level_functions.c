@@ -47,7 +47,7 @@ extern FLOAT_CAN_STRUCT float_tester;
 // TODO these are for testing RAM-to-storage. Do better. Prob use the date from the RTC to
 // build the filename
 U16 counter = 0;
-const char dlm_file_name[] = "/long_test001.txt";
+const char dlm_file_name[] = "/very_long_test.gdat";
 
 
 // dlm_init

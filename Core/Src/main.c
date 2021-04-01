@@ -49,7 +49,8 @@ DMA_HandleTypeDef hdma_sdmmc1_tx;
 DMA_HandleTypeDef hdma_sdmmc1_rx;
 
 osThreadId can_loop_taskHandle;
-osThreadId dlm_main_loopHandle;
+osThreadId dlm_manage_dataHandle;
+osThreadId move_ram_to_sd_Handle;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -63,6 +64,7 @@ static void MX_CAN2_Init(void);
 static void MX_SDMMC1_SD_Init(void);
 void can_loop(void const * argument);
 void dlm_main(void const * argument);
+void move_ram_to_sd(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -130,12 +132,16 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of can_loop_task */
-  osThreadDef(can_loop_task, can_loop, osPriorityAboveNormal, 0, 256);
+  osThreadDef(can_loop_task, can_loop, osPriorityAboveNormal, 0, 512);
   can_loop_taskHandle = osThreadCreate(osThread(can_loop_task), NULL);
 
-  /* definition and creation of dlm_main_loop */
-  osThreadDef(dlm_main_loop, dlm_main, osPriorityHigh, 0, 256);
-  dlm_main_loopHandle = osThreadCreate(osThread(dlm_main_loop), NULL);
+  /* definition and creation of dlm_manage_data */
+  osThreadDef(dlm_manage_data, dlm_main, osPriorityBelowNormal, 0, 512);
+  dlm_manage_dataHandle = osThreadCreate(osThread(dlm_manage_data), NULL);
+
+  /* definition and creation of move_ram_to_sd_ */
+  osThreadDef(move_ram_to_sd_, move_ram_to_sd, osPriorityHigh, 0, 1024);
+  move_ram_to_sd_Handle = osThreadCreate(osThread(move_ram_to_sd_), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -352,14 +358,14 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LED1_sd_write_Pin|LED3_HARDFAULT_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : LED3_Pin */
-  GPIO_InitStruct.Pin = LED3_Pin;
+  /*Configure GPIO pins : LED1_sd_write_Pin LED3_HARDFAULT_Pin */
+  GPIO_InitStruct.Pin = LED1_sd_write_Pin|LED3_HARDFAULT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(LED3_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : SD_Detected_Pin */
   GPIO_InitStruct.Pin = SD_Detected_Pin;
@@ -406,10 +412,28 @@ void dlm_main(void const * argument)
   for(;;)
   {
 	  manage_data_aquisition();
-	  move_ram_data_to_storage();
     osDelay(1);
   }
   /* USER CODE END dlm_main */
+}
+
+/* USER CODE BEGIN Header_move_ram_to_sd */
+/**
+* @brief Function implementing the move_ram_to_sd_ thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_move_ram_to_sd */
+void move_ram_to_sd(void const * argument)
+{
+  /* USER CODE BEGIN move_ram_to_sd */
+  /* Infinite loop */
+  for(;;)
+  {
+	  move_ram_data_to_storage();
+    osDelay(1);
+  }
+  /* USER CODE END move_ram_to_sd */
 }
 
  /**
