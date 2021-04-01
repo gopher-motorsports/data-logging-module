@@ -31,6 +31,7 @@ S8 create_new_file(const char* filename);
 #define MAX_FILENAME_SIZE 100
 #define MAX_APPEND_SIZE 6
 #define MAX_APPEND_NUM 0xFFFF
+#define MAX_NUM_OF_ERRORS 10
 
 // sd status defines
 typedef enum

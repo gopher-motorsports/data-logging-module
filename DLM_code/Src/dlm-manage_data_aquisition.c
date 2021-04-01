@@ -8,6 +8,7 @@
 #include "dlm-storage_structs.h"
 #include "base_types.h"
 #include "GopherCAN.h"
+#include "stm32f7xx_hal_gpio.h"
 
 
 // The head node for the linked list of all of the buckets.
@@ -242,11 +243,13 @@ void store_new_data()
                 {
                 	// TODO error handling
 
-                	// for now, turn on the onboard LED
-                	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
-
+                	// for now, turn on the onboard LED (ld2, blue)
+                	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
                 	return;
                 }
+
+                // adding the parameter was successful. Turn off the malloc failure LED
+                HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
 
                 // disable the pending responce flag
                 param_node->pending_responce = FALSE;
