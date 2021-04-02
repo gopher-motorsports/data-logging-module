@@ -83,7 +83,11 @@ S8 write_data_and_handle_errors()
 
 		if (error_counter >= MAX_NUM_OF_ERRORS)
 		{
+			// try to close the file. This probably wont work at this point, but the thought is nice
+			f_close(&SDFile);
+
 			// unmount the SD card and try to mount it again next cycle
+			// TODO remounting does not work
 			f_mount(NULL, SDPath, 1);
 			sd_status = SD_NOT_MOUNTED;
 		}
@@ -124,15 +128,7 @@ S8 write_data_to_storage()
     	return EMPTY_DATA_BUFF;
     }
 
-    // TODO consider not opening and closing the file each write cycle
-    // open the file. Mounting the sd card also will create the file
-    /* TODO
-    if ((fresult = f_open(&SDFile, actual_file_name, FA_OPEN_APPEND|FA_WRITE)) != FR_OK)
-    {
-    	file_error_code = fresult;
-    	return FILE_ERROR;
-    }
-    */
+    // The file is already open if the SD is mounted
 
     // run through each data node in the RAM LL
     while (data_node != NULL)
@@ -158,17 +154,12 @@ S8 write_data_to_storage()
         data_node = data_node_above->next;
     }
 
-    // close the file
-    /* TODO
-    if ((fresult = f_close(&SDFile)) != FR_OK)
-    {
-    	file_error_code = fresult;
-    	return FILE_ERROR;
-    }
-    */
-
-    // sync the file instead
-    f_sync(&SDFile);
+    // sync the file. this replaces opening and closing the file
+    if ((fresult = f_sync(&SDFile)) != FR_OK)
+	{
+		file_error_code = fresult;
+		return FILE_ERROR;
+	}
 
     // everything worked. Return
     return RAM_SUCCESS;
@@ -346,15 +337,6 @@ S8 create_new_file(const char* filename)
 		file_error_code = fresult;
 		return FILE_ERROR;
 	}
-
-	// close the file for now
-	/* TODO
-	if ((fresult = f_close(&SDFile)) != FR_OK)
-	{
-		file_error_code = fresult;
-		return FILE_ERROR;
-	}
-	*/
 
 	// everything worked. Return
 	return RAM_SUCCESS;

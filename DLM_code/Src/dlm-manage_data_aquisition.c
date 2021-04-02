@@ -189,7 +189,7 @@ void request_all_buckets()
             if (send_can_command(PRIO_HIGH, bucket_node->bucket.dam_id,
                 REQUEST_BUCKET, bucket_node->bucket.bucket_id, 0, 0, 0) != CAN_SUCCESS)
             {
-                // TODO error handling
+                // TODO CAN error handling
             }
 
             // set the pending responce flag for each parameter in this bucket to true
@@ -241,7 +241,7 @@ void store_new_data()
                 // add the param data to RAM
                 if (add_param_to_ram(param_node, bucket_node))
                 {
-                	// TODO error handling
+                	// TODO malloc error handling
 
                 	// for now, turn on the onboard LED (ld2, blue)
                 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
