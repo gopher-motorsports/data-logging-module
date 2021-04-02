@@ -8,6 +8,7 @@
 #include "dlm-storage_structs.h"
 #include "base_types.h"
 #include "GopherCAN.h"
+#include "stm32f7xx_hal_gpio.h"
 
 
 // The head node for the linked list of all of the buckets.
@@ -188,7 +189,7 @@ void request_all_buckets()
             if (send_can_command(PRIO_HIGH, bucket_node->bucket.dam_id,
                 REQUEST_BUCKET, bucket_node->bucket.bucket_id, 0, 0, 0) != CAN_SUCCESS)
             {
-                // TODO error handling
+                // TODO CAN error handling
             }
 
             // set the pending responce flag for each parameter in this bucket to true
@@ -240,13 +241,15 @@ void store_new_data()
                 // add the param data to RAM
                 if (add_param_to_ram(param_node, bucket_node))
                 {
-                	// TODO error handling
+                	// TODO malloc error handling
 
-                	// for now, turn on the onboard LED
-                	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
-
+                	// for now, turn on the onboard LED (ld2, blue)
+                	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
                 	return;
                 }
+
+                // adding the parameter was successful. Turn off the malloc failure LED
+                HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
 
                 // disable the pending responce flag
                 param_node->pending_responce = FALSE;

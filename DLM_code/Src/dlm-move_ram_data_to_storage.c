@@ -31,6 +31,7 @@ U32 bytes_written;
 const char* orig_actual_file_name;							// needed for if the file did not open the first time
 char actual_file_name[MAX_FILENAME_SIZE + MAX_APPEND_SIZE];	// give extra characters for numbers on the end, just in case
 SD_STATUS sd_status = SD_NOT_MOUNTED;
+U8 error_counter = 0;
 
 // move_ram_data_to_storage_init
 //  This function sets the local pointers to the correct values. Mounting the SD card is handled in the
@@ -77,9 +78,20 @@ S8 write_data_and_handle_errors()
 	// if a file operation fails, unmount and try remounting
 	if (error_code == FILE_ERROR)
 	{
-		// unmount the SD card and try to mount it again next cycle
-		f_mount(NULL, SDPath, 1);
-		sd_status = SD_NOT_MOUNTED;
+		// note this error and check if too many in a row have occurred
+		error_counter++;
+
+		if (error_counter >= MAX_NUM_OF_ERRORS)
+		{
+			// try to close the file. This probably wont work at this point, but the thought is nice
+			f_close(&SDFile);
+
+			// unmount the SD card and try to mount it again next cycle
+			// TODO remounting does not work
+			f_mount(NULL, SDPath, 1);
+			sd_status = SD_NOT_MOUNTED;
+		}
+
 		return FILE_ERROR;
 	}
 
@@ -90,8 +102,9 @@ S8 write_data_and_handle_errors()
 		return EMPTY_DATA_BUFF;
 	}
 
-	// toggle the onboard LED every successful file write
+	// toggle the onboard LED every successful file write and reset the error counter
 	HAL_GPIO_TogglePin(GPIOB, LED1_sd_write_Pin);
+	error_counter = 0;
 
 	return RAM_SUCCESS;
 }
@@ -115,12 +128,7 @@ S8 write_data_to_storage()
     	return EMPTY_DATA_BUFF;
     }
 
-    // open the file. Mounting the sd card also will create the file
-    if ((fresult = f_open(&SDFile, actual_file_name, FA_OPEN_APPEND|FA_WRITE)) != FR_OK)
-    {
-    	file_error_code = fresult;
-    	return FILE_ERROR;
-    }
+    // The file is already open if the SD is mounted
 
     // run through each data node in the RAM LL
     while (data_node != NULL)
@@ -146,15 +154,12 @@ S8 write_data_to_storage()
         data_node = data_node_above->next;
     }
 
-    // close the file
-    fresult = f_close(&SDFile);
-
-    // make sure the file was actually closed
-    if (fresult != FR_OK)
-    {
-    	file_error_code = fresult;
-    	return FILE_ERROR;
-    }
+    // sync the file. this replaces opening and closing the file
+    if ((fresult = f_sync(&SDFile)) != FR_OK)
+	{
+		file_error_code = fresult;
+		return FILE_ERROR;
+	}
 
     // everything worked. Return
     return RAM_SUCCESS;
@@ -327,16 +332,6 @@ S8 create_new_file(const char* filename)
 	}
 
 	// check to make sure there wasn't an error
-	if (fresult != FR_OK)
-	{
-		file_error_code = fresult;
-		return FILE_ERROR;
-	}
-
-	// close the file for now
-	fresult = f_close(&SDFile);
-
-	// check for a problem closing
 	if (fresult != FR_OK)
 	{
 		file_error_code = fresult;
