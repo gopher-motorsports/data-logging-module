@@ -87,7 +87,7 @@ S8 write_data_and_handle_errors()
 			f_close(&SDFile);
 
 			// unmount the SD card and try to mount it again next cycle
-			// TODO remounting does not work
+			// TODO remounting does not work at the moment, so this is basically giving up
 			f_mount(NULL, SDPath, 1);
 			sd_status = SD_NOT_MOUNTED;
 		}

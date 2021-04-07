@@ -21,6 +21,15 @@ void offload_data();
 void control_vehicle_systems();
 void can_service_loop();
 
+
+// Enums
+typedef enum
+{
+	NOT_LOGGING = 0,
+	LOGGING_ACTIVE = 1
+} LOGGING_STATUS;
+
+
 #endif
 
 
