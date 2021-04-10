@@ -46,7 +46,7 @@ extern FLOAT_CAN_STRUCT float_tester;
 
 // TODO these are for testing RAM-to-storage. Do better. Prob use the date from the RTC to
 // build the filename
-const char dlm_file_name[MAX_FILENAME_SIZE] = "/logging_test.gdat";
+char dlm_file_name[MAX_FILENAME_SIZE] = "/logging_test.gdat";
 
 // variable to store the logging status
 LOGGING_STATUS logging_status = NOT_LOGGING;
@@ -86,6 +86,10 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr0, CAN_HandleTypeDef* hcan_ptr1)
 	s64_tester.update_enabled = TRUE;
 	float_tester.update_enabled = TRUE;
 
+	// use the RTC to generate the filename
+	generate_filename(dlm_file_name);
+
+	// init the main tasks of the DLM
 	manage_logging_session_init(dlm_file_name);
     manage_data_aquisition_init(&ram_data);
     move_ram_data_to_storage_init(&ram_data, dlm_file_name);
@@ -163,7 +167,6 @@ void interface_with_vtm()
 //  at the beginning of each logging session
 void begin_logging_session()
 {
-	generate_filename(dlm_file_name);
 	logging_status = LOGGING_ACTIVE;
 }
 

@@ -4,7 +4,7 @@
 
 // self include
 #include "dlm-manage_logging_session.h"
-#include "stm32f7xx_hal_rtc.h"
+#include "stm32f7xx_hal.h"
 #include <stdio.h>
 
 
@@ -18,7 +18,7 @@ extern RTC_HandleTypeDef hrtc;
 //  TODO DOCS
 void manage_logging_session_init()
 {
-	// TODO nothing for now
+	// TODO add the time and date gopherCAN commands
 }
 
 
@@ -32,9 +32,12 @@ void generate_filename(char* filename)
 	HAL_RTC_GetDate(&hrtc, &curr_date, RTC_FORMAT_BIN);
 
 	// generate the string with sprintf
-	sprintf(filename, "dlm_data_%d%d%d_%d%d%d.gdat", curr_date.Year, curr_date.Month, curr_date.Date,
+	sprintf(filename, "/dlm_data_%04d%02d%02d_%02d%02d%02d.gdat", curr_date.Year + ZERO_YEAR, curr_date.Month, curr_date.Date,
 			curr_time.Hours, curr_time.Minutes, curr_time.Seconds);
 }
+
+
+// TODO CAN commands for setting the time and date
 
 
 // End of dlm-manage_logging_session.c

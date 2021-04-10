@@ -311,6 +311,9 @@ static void MX_RTC_Init(void)
 {
 
   /* USER CODE BEGIN RTC_Init 0 */
+	// TODO part of the bad solution
+	RTC_TimeTypeDef old_time = {0};
+	RTC_DateTypeDef old_date = {0};
 
   /* USER CODE END RTC_Init 0 */
 
@@ -336,11 +339,19 @@ static void MX_RTC_Init(void)
 
   /* USER CODE BEGIN Check_RTC_BKUP */
 
+  // TODO this is a dumb solution to the problem of the auto-gen code resetting the time and
+  // date on every MCU reset
+
+  // get the time and date stored before reseting
+  HAL_RTC_GetTime(&hrtc, &old_time, RTC_FORMAT_BIN);
+  HAL_RTC_GetDate(&hrtc, &old_date, RTC_FORMAT_BIN);
+
+
   /* USER CODE END Check_RTC_BKUP */
 
   /** Initialize RTC and set the Time and Date
   */
-  sTime.Hours = 0;
+  sTime.Hours = 12;
   sTime.Minutes = 0;
   sTime.Seconds = 0;
   sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
@@ -349,16 +360,28 @@ static void MX_RTC_Init(void)
   {
     Error_Handler();
   }
-  sDate.WeekDay = RTC_WEEKDAY_MONDAY;
-  sDate.Month = RTC_MONTH_JANUARY;
-  sDate.Date = 1;
-  sDate.Year = 0;
+  sDate.WeekDay = RTC_WEEKDAY_SATURDAY;
+  sDate.Month = RTC_MONTH_APRIL;
+  sDate.Date = 10;
+  sDate.Year = 51;
 
   if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN) != HAL_OK)
   {
     Error_Handler();
   }
   /* USER CODE BEGIN RTC_Init 2 */
+
+  // TODO part of the bad solution
+
+  // put the old time and date back to what it used to be
+  if (HAL_RTC_SetTime(&hrtc, &old_time, RTC_FORMAT_BIN) != HAL_OK)
+  {
+	Error_Handler();
+  }
+  if (HAL_RTC_SetDate(&hrtc, &old_date, RTC_FORMAT_BIN) != HAL_OK)
+  {
+    Error_Handler();
+  }
 
   /* USER CODE END RTC_Init 2 */
 

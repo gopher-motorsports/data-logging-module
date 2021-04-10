@@ -15,7 +15,7 @@
 
 
 // defines
-// TODO
+#define ZERO_YEAR 1970
 
 
 #endif

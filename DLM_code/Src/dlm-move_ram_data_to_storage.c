@@ -338,6 +338,9 @@ S8 create_new_file(const char* filename)
 		return FILE_ERROR;
 	}
 
+	// add the metadata to the first line. Right now it is just the filename
+	f_printf(&SDFile, "%s:\n", actual_file_name);
+
 	// everything worked. Return
 	return RAM_SUCCESS;
 }
