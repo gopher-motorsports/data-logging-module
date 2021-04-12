@@ -98,7 +98,7 @@ S8 write_data_and_handle_errors()
 	// if the data buffer is empty, there is prob a CAN error
 	if (error_code == EMPTY_DATA_BUFF)
 	{
-		// TODO handle this in some way, maybe reset the DAM-DLM init process
+		// TODO handle this in some way, maybe reset the DAM-DLM init process, or tell the PDM to reset the DAMs
 		return EMPTY_DATA_BUFF;
 	}
 
