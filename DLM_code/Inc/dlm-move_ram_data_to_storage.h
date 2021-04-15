@@ -23,7 +23,7 @@ S8 create_new_file(const char* filename);
 
 
 // defines
-// sizes of the different parts of the persistant storage data points. Sizes in Bytes
+// sizes of the different parts of the persistent storage data points. Sizes in Bytes
 #define STORAGE_PARAM_SIZE 2
 #define TIMESTAMP_SIZE 4
 #define DATA_SIZE 8

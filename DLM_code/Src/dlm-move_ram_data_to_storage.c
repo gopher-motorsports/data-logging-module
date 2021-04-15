@@ -87,7 +87,7 @@ S8 write_data_and_handle_errors()
 			f_close(&SDFile);
 
 			// unmount the SD card and try to mount it again next cycle
-			// TODO remounting does not work
+			// TODO remounting does not work at the moment, so this is basically giving up
 			f_mount(NULL, SDPath, 1);
 			sd_status = SD_NOT_MOUNTED;
 		}
@@ -98,7 +98,7 @@ S8 write_data_and_handle_errors()
 	// if the data buffer is empty, there is prob a CAN error
 	if (error_code == EMPTY_DATA_BUFF)
 	{
-		// TODO handle this in some way, maybe reset the DAM-DLM init process
+		// TODO handle this in some way, maybe reset the DAM-DLM init process, or tell the PDM to reset the DAMs
 		return EMPTY_DATA_BUFF;
 	}
 
@@ -337,6 +337,9 @@ S8 create_new_file(const char* filename)
 		file_error_code = fresult;
 		return FILE_ERROR;
 	}
+
+	// add the metadata to the first line. Right now it is just the filename
+	f_printf(&SDFile, "%s:\n", actual_file_name);
 
 	// everything worked. Return
 	return RAM_SUCCESS;

@@ -23,12 +23,14 @@ typedef union
 #define TIMESTAMP_SIZE 4
 #define DATA_SIZE 8
 #define TOTAL_SIZE (PARAM_ID_SIZE+TIMESTAMP_SIZE+DATA_SIZE)
+#define METADATA_MAX_SIZE 255
 
 // return defines
 #define PARSER_SUCCESS 0
 #define INCORRECT_ARG_INPUTTED -1
 #define FAILED_TO_OPEN -2
 #define CONVERSION_FAILED -3
+#define BAD_METADATA -4
 
 // function prototypes
 int main(int argc, char* argv[]);

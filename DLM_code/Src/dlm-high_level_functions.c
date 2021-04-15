@@ -13,7 +13,7 @@
 // Each function will call functions will only call functions in files
 //  with the name 'dlm-FUNCTION_NAME.c'. Ex: the function 'manage_data_aquisition'
 //  will call functions from the file 'dlm-manage_data_aquisition.c'. This
-//  is to help with overall code orginization
+//  is to help with overall code organization
 
 
 // self include
@@ -23,6 +23,7 @@
 #include "dlm-storage_structs.h"
 #include "dlm-manage_data_aquisition.h"
 #include "dlm-move_ram_data_to_storage.h"
+#include "dlm-manage_logging_session.h"
 
 
 // Global Variables
@@ -30,74 +31,72 @@
 DATA_INFO_NODE ram_data = {0, 0, NULL};
 
 // the HAL_CAN structs
-CAN_HandleTypeDef* dlm_hcan0;
 CAN_HandleTypeDef* dlm_hcan1;
+CAN_HandleTypeDef* dlm_hcan2;
 
-// get the tester variables
-extern U8_CAN_STRUCT u8_tester;
-extern U16_CAN_STRUCT u16_tester;
-extern U32_CAN_STRUCT u32_tester;
-extern U64_CAN_STRUCT u64_tester;
-extern S8_CAN_STRUCT s8_tester;
-extern S16_CAN_STRUCT s16_tester;
-extern S32_CAN_STRUCT s32_tester;
-extern S64_CAN_STRUCT s64_tester;
-extern FLOAT_CAN_STRUCT float_tester;
 
 // TODO these are for testing RAM-to-storage. Do better. Prob use the date from the RTC to
 // build the filename
-const char dlm_file_name[] = "/logging_test.gdat";
+char dlm_file_name[MAX_FILENAME_SIZE] = "/logging_test.gdat";
+
+// variable to store the logging status
+LOGGING_STATUS logging_status = NOT_LOGGING;
 
 
 // dlm_init
 //  This function will handle power-on behavior, all completely TBD
-//  according to everthing else the module does
-void dlm_init(CAN_HandleTypeDef* hcan_ptr0, CAN_HandleTypeDef* hcan_ptr1)
+//  according to everything else the module does
+void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2)
 {
     // init GopherCAN
-	dlm_hcan0 = hcan_ptr0;
 	dlm_hcan1 = hcan_ptr1;
+	dlm_hcan2 = hcan_ptr2;
 
 	// initialize CAN
 	// NOTE: CAN will also need to be added in CubeMX and code must be generated
-	// Check the STM_CAN repo for the file "F0xx CAN Config Settings.pptx" for the correct settings
-	if (init_can(dlm_hcan0, DLM_ID)
-			|| init_can(dlm_hcan1, DLM_ID))
+	// Check the STM_CAN repo for the file "Fxxx CAN Config Settings.pptx" for the correct settings
+	if (init_can(dlm_hcan1, DLM_ID, MASTER)
+			|| init_can(dlm_hcan2, DLM_ID, SLAVE))
 	{
 		// an error has occurred, stay here
 		while (1);
 	}
 
 	// Declare which bus is which using define_can_bus
-	define_can_bus(dlm_hcan1, GCAN0, 0);
-	define_can_bus(dlm_hcan0, GCAN1, 1);
+	define_can_bus(dlm_hcan2, GCAN0, 0);
+	define_can_bus(dlm_hcan1, GCAN1, 1);
 
 	// enable the tester variables
-	u8_tester.update_enabled = TRUE;
-	u16_tester.update_enabled = TRUE;
-	u32_tester.update_enabled = TRUE;
-	u64_tester.update_enabled = TRUE;
-	s8_tester.update_enabled = TRUE;
-	s16_tester.update_enabled = TRUE;
-	s32_tester.update_enabled = TRUE;
-	s64_tester.update_enabled = TRUE;
-	float_tester.update_enabled = TRUE;
+	set_all_params_state(TRUE);
 
+	// use the RTC to generate the filename
+	generate_filename(dlm_file_name);
+
+	// init the main tasks of the DLM
+	manage_logging_session_init(dlm_file_name);
     manage_data_aquisition_init(&ram_data);
     move_ram_data_to_storage_init(&ram_data, dlm_file_name);
+
+    // in REV1 we will start the logging session right away
+    begin_logging_session();
 }
 
 
 // manage_data_aquisition
 //  This function will control the DAMs by sending a CAN command to send
 //  the data of that bucket to the DLM. How these structs are configured
-//  is controled by a CAN command sent by the DAM
+//  is controlled by a CAN command sent by the DAM
 //
 // Call FRQ:
 //  This function will need to be called at the maximum parameter
 //  request rate the DLM should support.
 void manage_data_aquisition()
 {
+	if (logging_status != LOGGING_ACTIVE)
+	{
+		return;
+	}
+
     request_all_buckets();
     store_new_data();
 }
@@ -105,7 +104,7 @@ void manage_data_aquisition()
 
 
 // move_ram_data_to_storage
-//  This function will move all of the data stored on ram to persistant storage,
+//  This function will move all of the data stored on ram to persistent storage,
 //  then wipe the RAM. The way this will be stored is still TBD, but will depend
 //  heavily on what DevOps wants
 //
@@ -117,6 +116,11 @@ void manage_data_aquisition()
 //   - how many write cycles to the persistent storage we are ok giving up
 void move_ram_data_to_storage()
 {
+	if (logging_status != LOGGING_ACTIVE)
+	{
+		return;
+	}
+
     // TODO Use some logic to determine when the best time is to write to storage. Right
 	// now it just writes every second
 	write_data_and_handle_errors();
@@ -137,21 +141,21 @@ void interface_with_vtm()
 
 
 // begin_logging_session
-//  This function will be called at the beginning of each logging sesstion,
-//  and will create a new file on the persistant storage will the correct name
-//  and metadata for that run. What the name is and what metadata needs to be
-//  stored is TBD and up to DevOps
+//  This function will be called at the beginning of each logging session,
+//  and will create a new file on the persistent storage with the correct name
+//  for that run. Name will store the date and time of the beginning of the
+//  logging session
 //
 // Call FRQ:
 //  at the beginning of each logging session
 void begin_logging_session()
 {
-    // TODO
+	logging_status = LOGGING_ACTIVE;
 }
 
 
 // end_logging_session
-//  This function will get all of the data off the RAM and into persistant
+//  This function will get all of the data off the RAM and into persistent
 //  storage (call move_ram_data_to_storage()) one more time, then complete
 //  and close the data storage file, and finally get the module ready to
 //  begin a new logging session
@@ -165,8 +169,8 @@ void end_logging_session()
 
 
 // offload_data
-//  This function will take data off of the persistant storage and send it
-//  to a PC in some way (possibly ethernet). How to begin this process, how
+//  This function will take data off of the persistent storage and send it
+//  to a PC in some way (possibly Ethernet). How to begin this process, how
 //  to choose a file to offload, and how to actually accomplish the offloading
 //  is still very TBD
 //
@@ -196,19 +200,19 @@ void control_vehicle_systems()
 //  This will perform all of the CAN servicing actions required for GopherCAN,
 //  including servicing TX and RX hardware/buffers. Should be called more frequently
 //  then store_data_to_ram() in order to ensure there is new data to be stored
-//  if it has been recieved
+//  if it has been received
 //
 // Call FRQ:
 //  100us because we can
 void can_service_loop()
 {
 	// This is needed to account for a case where the RX buffer fills up, as the ISR is only
-	//  triggered directly on reciving the message
-	// TODO enable interrupts when not debugging
-	//service_can_rx_hardware(dlm_hcan0, CAN_RX_FIFO0);
-	//service_can_rx_hardware(dlm_hcan0, CAN_RX_FIFO1);
+	//  triggered directly on receiving the message
+	// if debugging and want to disable interrupts, uncomment these lines
 	//service_can_rx_hardware(dlm_hcan1, CAN_RX_FIFO0);
 	//service_can_rx_hardware(dlm_hcan1, CAN_RX_FIFO1);
+	//service_can_rx_hardware(dlm_hcan2, CAN_RX_FIFO0);
+	//service_can_rx_hardware(dlm_hcan2, CAN_RX_FIFO1);
 
 	// handle each RX message in the buffer
 	if (service_can_rx_buffer())
@@ -216,8 +220,8 @@ void can_service_loop()
 		// an error has occurred
 	}
 
-	service_can_tx_hardware(dlm_hcan0);
 	service_can_tx_hardware(dlm_hcan1);
+	service_can_tx_hardware(dlm_hcan2);
 }
 
 

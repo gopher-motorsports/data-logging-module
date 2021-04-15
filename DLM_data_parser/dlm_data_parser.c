@@ -62,15 +62,20 @@ int main(int argc, char* argv[])
 //  data points are 16bits of the param ID, 32bits
 int convert_gdat_to_csv(FILE* gdat, FILE* csv)
 {
-    unsigned char datapoint[TOTAL_SIZE];
+    unsigned char datapoint[TOTAL_SIZE] = {0};
+    unsigned char metadata[METADATA_MAX_SIZE] = {0};
     uint16_t param = 0;
     uint32_t timestamp = 0;
     DPF_CONVERTER data;
     data.u64 = 0;
 
-    // copy the file header/metadata
-    // TODO
+    // copy the file header/metadata from the gdat to the csv
+    if (fgets(metadata, METADATA_MAX_SIZE, gdat) == 0)
+    {
+    	return BAD_METADATA;
+    }
 
+    fprintf(csv, "%s", metadata);
     fprintf(csv, "Parameter ID, Timestamp, Data\n");
 
     // big loop for reading the file
