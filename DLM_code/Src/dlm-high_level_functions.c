@@ -23,6 +23,7 @@
 #include "dlm-storage_structs.h"
 #include "dlm-manage_data_aquisition.h"
 #include "dlm-move_ram_data_to_storage.h"
+#include "dlm-manage_logging_session.h"
 
 
 // Global Variables
@@ -30,19 +31,9 @@
 DATA_INFO_NODE ram_data = {0, 0, NULL};
 
 // the HAL_CAN structs
-CAN_HandleTypeDef* dlm_hcan0;
 CAN_HandleTypeDef* dlm_hcan1;
+CAN_HandleTypeDef* dlm_hcan2;
 
-// get the tester variables
-extern U8_CAN_STRUCT u8_tester;
-extern U16_CAN_STRUCT u16_tester;
-extern U32_CAN_STRUCT u32_tester;
-extern U64_CAN_STRUCT u64_tester;
-extern S8_CAN_STRUCT s8_tester;
-extern S16_CAN_STRUCT s16_tester;
-extern S32_CAN_STRUCT s32_tester;
-extern S64_CAN_STRUCT s64_tester;
-extern FLOAT_CAN_STRUCT float_tester;
 
 // TODO these are for testing RAM-to-storage. Do better. Prob use the date from the RTC to
 // build the filename
@@ -55,36 +46,28 @@ LOGGING_STATUS logging_status = NOT_LOGGING;
 // dlm_init
 //  This function will handle power-on behavior, all completely TBD
 //  according to everything else the module does
-void dlm_init(CAN_HandleTypeDef* hcan_ptr0, CAN_HandleTypeDef* hcan_ptr1)
+void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2)
 {
     // init GopherCAN
-	dlm_hcan0 = hcan_ptr0;
 	dlm_hcan1 = hcan_ptr1;
+	dlm_hcan2 = hcan_ptr2;
 
 	// initialize CAN
 	// NOTE: CAN will also need to be added in CubeMX and code must be generated
 	// Check the STM_CAN repo for the file "Fxxx CAN Config Settings.pptx" for the correct settings
-	if (init_can(dlm_hcan0, DLM_ID)
-			|| init_can(dlm_hcan1, DLM_ID))
+	if (init_can(dlm_hcan1, DLM_ID, MASTER)
+			|| init_can(dlm_hcan2, DLM_ID, SLAVE))
 	{
 		// an error has occurred, stay here
 		while (1);
 	}
 
 	// Declare which bus is which using define_can_bus
-	define_can_bus(dlm_hcan1, GCAN0, 0);
-	define_can_bus(dlm_hcan0, GCAN1, 1);
+	define_can_bus(dlm_hcan2, GCAN0, 0);
+	define_can_bus(dlm_hcan1, GCAN1, 1);
 
 	// enable the tester variables
-	u8_tester.update_enabled = TRUE;
-	u16_tester.update_enabled = TRUE;
-	u32_tester.update_enabled = TRUE;
-	u64_tester.update_enabled = TRUE;
-	s8_tester.update_enabled = TRUE;
-	s16_tester.update_enabled = TRUE;
-	s32_tester.update_enabled = TRUE;
-	s64_tester.update_enabled = TRUE;
-	float_tester.update_enabled = TRUE;
+	set_all_params_state(TRUE);
 
 	// use the RTC to generate the filename
 	generate_filename(dlm_file_name);
@@ -226,10 +209,10 @@ void can_service_loop()
 	// This is needed to account for a case where the RX buffer fills up, as the ISR is only
 	//  triggered directly on receiving the message
 	// if debugging and want to disable interrupts, uncomment these lines
-	//service_can_rx_hardware(dlm_hcan0, CAN_RX_FIFO0);
-	//service_can_rx_hardware(dlm_hcan0, CAN_RX_FIFO1);
 	//service_can_rx_hardware(dlm_hcan1, CAN_RX_FIFO0);
 	//service_can_rx_hardware(dlm_hcan1, CAN_RX_FIFO1);
+	//service_can_rx_hardware(dlm_hcan2, CAN_RX_FIFO0);
+	//service_can_rx_hardware(dlm_hcan2, CAN_RX_FIFO1);
 
 	// handle each RX message in the buffer
 	if (service_can_rx_buffer())
@@ -237,8 +220,8 @@ void can_service_loop()
 		// an error has occurred
 	}
 
-	service_can_tx_hardware(dlm_hcan0);
 	service_can_tx_hardware(dlm_hcan1);
+	service_can_tx_hardware(dlm_hcan2);
 }
 
 
