@@ -24,6 +24,10 @@ void bucket_requested(MODULE_ID sender, void* parameter,
 #define BUCKET_1 1
 #define BUCKET_2 2
 
+#define BUCKET_0_SIZE 3
+#define BUCKET_1_SIZE 3
+#define BUCKET_2_SIZE 3
+
 #define BUCKET_0_RQ_FRQ 10
 #define BUCKET_1_RQ_FRQ 50
 #define BUCKET_2_RQ_FRQ 100
