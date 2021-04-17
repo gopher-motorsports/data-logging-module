@@ -26,6 +26,14 @@ S8 add_param_to_ram(U16_LIST_NODE* param_node, BUCKET_NODE* bucket_node);
 #define DLM_MALLOC_ERROR -1
 #define DLM_DATATYPE_NOT_FOUND -2
 
+// error enum (MDA = manage data aquisition)
+typedef enum
+{
+    NO_MDA_ERROR = 0,
+    MDA_MALLOC_ERROR = -1,
+    MDA_CAN_ERROR = -2
+} MDA_ERROR;
+
 #endif
 
 

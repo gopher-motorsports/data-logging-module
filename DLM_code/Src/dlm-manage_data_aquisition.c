@@ -2,7 +2,7 @@
 //  Code for managing data requests and storage from the DAMs
 
 
-// self include
+// includes
 #include "dlm-manage_data_aquisition.h"
 #include <stdlib.h>
 #include "dlm-storage_structs.h"
@@ -23,6 +23,9 @@ BUCKET_NODE bucket_list_head = {{0, 0, 0, 0, NULL}, NULL};
 //  be common
 DATA_INFO_NODE* ram_data_head;
 
+// variable to store the last error
+MDA_ERROR last_mda_error = NO_MDA_ERROR;
+
 // from GopherCAN.c
 extern void* all_parameter_structs[NUM_OF_PARAMETERS];
 extern U8 parameter_data_types[NUM_OF_PARAMETERS];
@@ -36,14 +39,13 @@ void manage_data_aquisition_init(DATA_INFO_NODE* ram_data)
     ram_data_head = ram_data;
 
     // Add the correct CAN command functions
+    add_custom_can_func(SET_BUCKET_SIZE, &set_bucket_size, TRUE, NULL);
     add_custom_can_func(ADD_PARAM_TO_BUCKET, &add_param_to_bucket, TRUE, NULL);
     add_custom_can_func(ASSIGN_BUCKET_TO_FRQ, &assign_bucket_to_frq, TRUE, NULL);
 
-    // TODO we need more commands
-
     // Send CAN commands to all modules (specifically to the DAMs) that
     // this module is ready to be interacted with to add buckets
-    send_can_command(PRIO_HIGH, DAM_ID, SEND_BUCKET_PARAMS, 0, 0, 0, 0);
+    send_can_command(PRIO_HIGH, ALL_MODULES_ID, SEND_BUCKET_PARAMS, 0, 0, 0, 0);
 }
 
 
@@ -55,20 +57,15 @@ void manage_data_aquisition_deinit()
 }
 
 
-// add_param_to_bucket
-//  This function is a CAN command, designed to be activated by the DAM. When
-//  called, this will add the param inputted to the correct bucket with the assosiated
-//  DAM included. Built to handle a general amount of DAMs, params, and buckets
-void add_param_to_bucket(U8 sending_dam, void* UNUSED,
-    U8 param_id_msb, U8 param_id_lsb, U8 bucket_id, U8 UNUSED3)
+// set_bucket_size
+//  function that will handle the SET_BUCKET_SIZE command from the DAM. This
+//  will search for the bucket in the LL with the correct ID, or create a new
+//  one if it does not exsist
+void set_bucket_size(U8 sending_dam, void* UNUSED,
+    U8 bucket_id, U8 num_of_params, U8 UNUSED2, U8 UNUSED3)
 {
-	BUCKET_NODE* above_bucket_node = &bucket_list_head;
+    BUCKET_NODE* above_bucket_node = &bucket_list_head;
     BUCKET_NODE* bucket_node = bucket_list_head.next;
-    U16_LIST_NODE* param_node;
-    U16 param_id;
-
-    // create the param_id from the two 8-bit chunks
-    param_id = (param_id_msb << BITS_IN_BYTE) | param_id_lsb;
 
     // check if there exists a bucket with this ID on this DAM in the bucket list
     while (bucket_node != NULL)
@@ -93,7 +90,9 @@ void add_param_to_bucket(U8 sending_dam, void* UNUSED,
         // test if malloc failed
         if (bucket_node == NULL)
         {
-            // TODO handle a malloc error
+            // resend the command to restart the sequence and note the error
+            send_can_command(PRIO_HIGH, sending_dam, SEND_BUCKET_PARAMS, 0, 0, 0, 0);
+            last_mda_error = MDA_MALLOC_ERROR;
             return;
         }
 
@@ -113,7 +112,53 @@ void add_param_to_bucket(U8 sending_dam, void* UNUSED,
         above_bucket_node->next = bucket_node;
     }
 
-    // Check to make sure this parameter is not already in the list
+    // set the number of parameters in this bucket
+    bucket_node->bucket.num_of_params = num_of_params;
+}
+
+
+// add_param_to_bucket
+//  This function is a CAN command, designed to be activated by the DAM. When
+//  called, this will add the param inputted to the correct bucket with the assosiated
+//  DAM included. Built to handle a general amount of DAMs, params, and buckets
+void add_param_to_bucket(U8 sending_dam, void* UNUSED,
+    U8 param_id_msb, U8 param_id_lsb, U8 bucket_id, U8 UNUSED3)
+{
+	BUCKET_NODE* above_bucket_node = &bucket_list_head;
+    BUCKET_NODE* bucket_node = bucket_list_head.next;
+    U16_LIST_NODE* param_node;
+    U16 param_id;
+    U8 params_in_this_bucket = 0;
+
+    // create the param_id from the two 8-bit chunks
+    param_id = (param_id_msb << BITS_IN_BYTE) | param_id_lsb;
+
+    // check if there exists a bucket with this ID on this DAM in the bucket list
+    while (bucket_node != NULL)
+    {
+        if ((bucket_node->bucket.dam_id == sending_dam)
+            && (bucket_node->bucket.bucket_id == bucket_id))
+        {
+            // This is the correct bucket. Move on to the next step
+            break;
+        }
+
+        // this is not the correct bucket. Try the next one
+        above_bucket_node = bucket_node;
+        bucket_node = bucket_node->next;
+    }
+
+    // if the bucket does not exist, resend SEND_BUCKET_PARAMS to ask the DAM
+    // to start the process over again
+    if (bucket_node == NULL)
+    {
+        // there may be some repeats when this is sent, but that is ok
+        send_can_command(PRIO_HIGH, sending_dam, SEND_BUCKET_PARAMS, 0, 0, 0, 0);
+        return;
+    }
+
+    // Check to make sure this parameter is not already in the list. Do not add it
+    // if it is
     // TODO
 
     // malloc some new memory for the U16 node to store the parameter
@@ -122,7 +167,11 @@ void add_param_to_bucket(U8 sending_dam, void* UNUSED,
     // test if malloc failed
     if (param_node == NULL)
     {
-        // TODO handle a malloc error
+        // a failed malloc will result in the parameter not being added,
+        // and in that case the bucket will not be completely filled, leading
+        // to the DLM asking the DAM to fill the bucket again. However these
+        // mallocs are unlikely
+        last_mda_error = MDA_MALLOC_ERROR;
         return;
     }
 
@@ -135,7 +184,8 @@ void add_param_to_bucket(U8 sending_dam, void* UNUSED,
     param_node->data = param_id;
     param_node->pending_responce = FALSE;
 
-
+    // TODO if the number of params in this bucket is equal to the desired
+    // size, send a BUCKET_OK command to the correct DAM
 }
 
 
@@ -191,7 +241,8 @@ void request_all_buckets()
             if (send_can_command(PRIO_HIGH, bucket_node->bucket.dam_id,
                 REQUEST_BUCKET, bucket_node->bucket.bucket_id, 0, 0, 0) != CAN_SUCCESS)
             {
-                // TODO CAN error handling
+                // set the last error variable to note the CAN error
+                last_mda_error = MDA_CAN_ERROR;
             }
 
             // set the pending responce flag for each parameter in this bucket to true
@@ -209,6 +260,8 @@ void request_all_buckets()
         // move on to the next bucket
         bucket_node = bucket_node->next;
     }
+
+    // done with requesting the buckets
 }
 
 

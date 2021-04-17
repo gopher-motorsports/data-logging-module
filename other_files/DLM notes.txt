@@ -23,9 +23,9 @@ move_ram_data_to_storage:
 
 TESTS:
 manage_data_aquisition:
- [x] TEST adding and parameters from buckets. This will also test the linked lists
- [x] TEST assigning bucket frequencies
- [x] TEST time-based bucket requests
+ [_] TEST adding and parameters from buckets. This will also test the linked lists
+ [_] TEST assigning bucket frequencies
+ [_] TEST time-based bucket requests
  [x] TEST if double pointer witchcraft is done correctly in init()
  [x] TEST adding every data point to storage
  [_] TEST parameters with IDs greater than 255
