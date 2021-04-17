@@ -39,6 +39,8 @@ void manage_data_aquisition_init(DATA_INFO_NODE* ram_data)
     add_custom_can_func(ADD_PARAM_TO_BUCKET, &add_param_to_bucket, TRUE, NULL);
     add_custom_can_func(ASSIGN_BUCKET_TO_FRQ, &assign_bucket_to_frq, TRUE, NULL);
 
+    // TODO we need more commands
+
     // Send CAN commands to all modules (specifically to the DAMs) that
     // this module is ready to be interacted with to add buckets
     send_can_command(PRIO_HIGH, DAM_ID, SEND_BUCKET_PARAMS, 0, 0, 0, 0);
