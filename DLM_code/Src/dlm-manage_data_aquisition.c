@@ -157,12 +157,27 @@ void add_param_to_bucket(U8 sending_dam, void* UNUSED,
         return;
     }
 
+    param_node = bucket_node->bucket.param_ids;
+
     // Check to make sure this parameter is not already in the list. Do not add it
     // if it is
-    // TODO
+    while (param_node != NULL)
+    {
+        if (param_node.data == param_id)
+        {
+            // this parameter is a duplicate. Return without adding a new one
+            return;
+        }
+
+        // move on to the next paramter node and note that there is another param
+        // in this bucket
+        param_node = param_node->next;
+        params_in_this_bucket++;
+    }
 
     // malloc some new memory for the U16 node to store the parameter
     param_node = (U16_LIST_NODE*)malloc(sizeof(U16_LIST_NODE));
+    params_in_this_bucket++;
 
     // test if malloc failed
     if (param_node == NULL)
@@ -170,13 +185,13 @@ void add_param_to_bucket(U8 sending_dam, void* UNUSED,
         // a failed malloc will result in the parameter not being added,
         // and in that case the bucket will not be completely filled, leading
         // to the DLM asking the DAM to fill the bucket again. However these
-        // mallocs are unlikely
+        // mallocs are unlikely to fail
         last_mda_error = MDA_MALLOC_ERROR;
         return;
     }
 
-    // add this param to the front of the param linked list. It can be added to
-    // the front because order does not matter in this list
+    // add this param to the front of the linked list. The order does not matter
+    // so it can be added to the front of the list
     param_node->next = bucket_node->bucket.param_ids;
     bucket_node->bucket.param_ids = param_node;
 
@@ -184,8 +199,12 @@ void add_param_to_bucket(U8 sending_dam, void* UNUSED,
     param_node->data = param_id;
     param_node->pending_responce = FALSE;
 
-    // TODO if the number of params in this bucket is equal to the desired
+    // if the number of params in this bucket is equal to the desired
     // size, send a BUCKET_OK command to the correct DAM
+    if (params_in_this_bucket == bucket_node->bucket.num_of_params)
+    {
+        send_can_command(PRIO_HIGH, sending_dam, BUCKET_OK, bucket_id, 0, 0, 0);
+    }
 }
 
 
@@ -296,7 +315,7 @@ void store_new_data()
                 // add the param data to RAM
                 if (add_param_to_ram(param_node, bucket_node))
                 {
-                	// TODO malloc error handling
+                	last_mda_error = MDA_MALLOC_ERROR;
 
                 	// for now, turn on the onboard LED (ld2, blue)
                 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
