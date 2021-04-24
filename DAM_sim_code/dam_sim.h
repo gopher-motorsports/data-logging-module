@@ -17,6 +17,8 @@ void send_bucket_params(MODULE_ID sender, void* parameter,
     U8 UNUSED0, U8 UNUSED1, U8 UNUSED2, U8 UNUSED3);
 void bucket_requested(MODULE_ID sender, void* parameter,
     U8 bucket_id, U8 UNUSED1, U8 UNUSED2, U8 UNUSED3);
+void bucket_ok(MODULE_ID sender, void* parameter,
+    U8 bucket_id, U8 UNUSED1, U8 UNUSED2, U8 UNUSED3);
 
 
 // defines

@@ -15,7 +15,7 @@
 //  A linked list is a good canidate for storing all of the buckets because they will need
 //  to be squentially run through in order to send the correct request, and the DLM
 //  must be able to handle a general amount of them.
-BUCKET_NODE bucket_list_head = {{0, 0, 0, 0, NULL}, NULL};
+BUCKET_NODE bucket_list_head = {{0, 0, 0, 0, 0, NULL}, NULL};
 
 // Head node pointer and first pointer to the linked list for all of the data points
 //  in the RAM data buffer. A linked list is a good candidate for many of the
@@ -124,7 +124,6 @@ void set_bucket_size(U8 sending_dam, void* UNUSED,
 void add_param_to_bucket(U8 sending_dam, void* UNUSED,
     U8 param_id_msb, U8 param_id_lsb, U8 bucket_id, U8 UNUSED3)
 {
-	BUCKET_NODE* above_bucket_node = &bucket_list_head;
     BUCKET_NODE* bucket_node = bucket_list_head.next;
     U16_LIST_NODE* param_node;
     U16 param_id;
@@ -144,7 +143,6 @@ void add_param_to_bucket(U8 sending_dam, void* UNUSED,
         }
 
         // this is not the correct bucket. Try the next one
-        above_bucket_node = bucket_node;
         bucket_node = bucket_node->next;
     }
 
@@ -163,7 +161,7 @@ void add_param_to_bucket(U8 sending_dam, void* UNUSED,
     // if it is
     while (param_node != NULL)
     {
-        if (param_node.data == param_id)
+        if (param_node->data == param_id)
         {
             // this parameter is a duplicate. Return without adding a new one
             return;

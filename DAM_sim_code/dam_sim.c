@@ -23,7 +23,7 @@ void dam_sim_init(CAN_HandleTypeDef* hcan_ptr)
     example_hcan = hcan_ptr;
 
     // init gopherCAN stuff
-    if (init_can(example_hcan, this_module))
+    if (init_can(example_hcan, this_module, MASTER))
 	{
 		// an error has occurred, stay here
 		while (1);
@@ -37,7 +37,7 @@ void dam_sim_init(CAN_HandleTypeDef* hcan_ptr)
     add_custom_can_func(BUCKET_OK, &bucket_ok, TRUE, NULL);
     add_custom_can_func(REQUEST_BUCKET, &bucket_requested, TRUE, NULL);
 
-    led_to_change = GPIO_PIN_0; // this is LD1 on the dev board
+    led_to_change = GPIO_PIN_5; // this is LD1 on the dev board
 
     if (add_custom_can_func(SET_LED_STATE, &change_led_state,
         TRUE, (void*)&led_to_change))
@@ -74,7 +74,7 @@ void main_loop()
 	{
 		last_button_state = button_state;
 
-		if (send_can_command(PRIO_HIGH, DLM_ID, SET_LED_STATE,
+		if (send_can_command(PRIO_HIGH, ALL_MODULES_ID, SET_LED_STATE,
 				button_state, button_state, button_state, button_state))
 		{
 			// error sending command
@@ -98,10 +98,16 @@ void service_can_hardware()
 void send_bucket_params(MODULE_ID sender, void* parameter,
     U8 UNUSED0, U8 UNUSED1, U8 UNUSED2, U8 UNUSED3)
 {
+	static U8 counter = 0;
+
     // set the number of parameters in each bucket
     send_can_command(PRIO_HIGH, DLM_ID, SET_BUCKET_SIZE, BUCKET_0, BUCKET_0_SIZE, 0, 0);
     send_can_command(PRIO_HIGH, DLM_ID, SET_BUCKET_SIZE, BUCKET_1, BUCKET_1_SIZE, 0, 0);
-    send_can_command(PRIO_HIGH, DLM_ID, SET_BUCKET_SIZE, BUCKET_2, BUCKET_2_SIZE, 0, 0);
+    if (counter)
+    {
+    	send_can_command(PRIO_HIGH, DLM_ID, SET_BUCKET_SIZE, BUCKET_2, BUCKET_2_SIZE, 0, 0);
+    }
+    counter++;
 
     // Send a command for each parameter to tell what bucket it is in
     send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, 0, U8_TESTER_ID, BUCKET_0, 0);
