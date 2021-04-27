@@ -12,6 +12,8 @@
 // function prototypes
 void manage_data_aquisition_init();
 void manage_data_aquisition_deinit();
+void set_bucket_size(U8 sending_dam, void* UNUSED,
+    U8 bucket_id, U8 num_of_params, U8 UNUSED2, U8 UNUSED3);
 void add_param_to_bucket(U8 sending_dam, void* UNUSED,
     U8 param_id_msb, U8 param_id_lsb, U8 bucket_id, U8 UNUSED3);
 void assign_bucket_to_frq(U8 sending_dam, void* UNUSED,
@@ -25,6 +27,14 @@ S8 add_param_to_ram(U16_LIST_NODE* param_node, BUCKET_NODE* bucket_node);
 #define DLM_SUCCESS 0
 #define DLM_MALLOC_ERROR -1
 #define DLM_DATATYPE_NOT_FOUND -2
+
+// error enum (MDA = manage data aquisition)
+typedef enum
+{
+    NO_MDA_ERROR = 0,
+    MDA_MALLOC_ERROR = -1,
+    MDA_CAN_ERROR = -2
+} MDA_ERROR;
 
 #endif
 

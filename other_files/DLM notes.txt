@@ -30,8 +30,8 @@ manage_data_aquisition:
  [x] TEST adding every data point to storage
  [_] TEST parameters with IDs greater than 255
  [_] TEST bucket request intervals greater than 255
- [_] TEST missing add_param_to_bucket message
- [_] TEST missing set_bucket_size message
+ [x] TEST missing add_param_to_bucket message
+ [x] TEST missing set_bucket_size message
 
 move_ram_data_to_storage:
  [x] TEST memory usage

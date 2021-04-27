@@ -29,11 +29,12 @@ struct U16_LIST_NODE
 // bucket struct
 typedef struct
 {
-    U8 dam_id;
-    U8 bucket_id;
-    U16 ms_between_requests; // time between the requests in ms
-    U32 last_request; // last time, in ms, the bucket was requested
-    U16_LIST_NODE* param_ids; // Pointer to the first node of a linked list of all of the parameters in this bucket
+    U8 dam_id;                  // this does not nessissarily need to be a DAM, any gopherCAN module would work
+    U8 bucket_id;               // the ID of this bucket. This is used with dam_id to identify the bucket
+    U16 ms_between_requests;    // time between the requests in ms
+    U32 last_request;           // last time, in ms, the bucket was requested
+    U8 num_of_params;           // the number of parameters that will be stored in this bucket
+    U16_LIST_NODE* param_ids;   // Pointer to the first node of a linked list of all of the parameters in this bucket
 } DAM_BUCKET;
 
 

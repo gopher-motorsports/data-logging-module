@@ -17,12 +17,18 @@ void send_bucket_params(MODULE_ID sender, void* parameter,
     U8 UNUSED0, U8 UNUSED1, U8 UNUSED2, U8 UNUSED3);
 void bucket_requested(MODULE_ID sender, void* parameter,
     U8 bucket_id, U8 UNUSED1, U8 UNUSED2, U8 UNUSED3);
+void bucket_ok(MODULE_ID sender, void* parameter,
+    U8 bucket_id, U8 UNUSED1, U8 UNUSED2, U8 UNUSED3);
 
 
 // defines
 #define BUCKET_0 0
 #define BUCKET_1 1
 #define BUCKET_2 2
+
+#define BUCKET_0_SIZE 3
+#define BUCKET_1_SIZE 3
+#define BUCKET_2_SIZE 3
 
 #define BUCKET_0_RQ_FRQ 10
 #define BUCKET_1_RQ_FRQ 50
