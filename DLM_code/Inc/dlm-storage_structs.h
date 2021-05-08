@@ -16,25 +16,24 @@ typedef union
 } DPF_CONVERTER;
 
 
-// u16 linked list node for parameters struct
-typedef struct U16_LIST_NODE U16_LIST_NODE;
-struct U16_LIST_NODE
+// parameter detail array for buckets
+typedef struct
 {
-    U16 data;
-    U16_LIST_NODE* next;
-    U8 pending_responce;
-};
+	U16 parameter;
+	U8 pending_responce;
+} BUCKET_PARAM_INFO;
 
 
 // bucket struct
 typedef struct
 {
-    U8 dam_id;                  // this does not nessissarily need to be a DAM, any gopherCAN module would work
-    U8 bucket_id;               // the ID of this bucket. This is used with dam_id to identify the bucket
-    U16 ms_between_requests;    // time between the requests in ms
-    U32 last_request;           // last time, in ms, the bucket was requested
-    U8 num_of_params;           // the number of parameters that will be stored in this bucket
-    U16_LIST_NODE* param_ids;   // Pointer to the first node of a linked list of all of the parameters in this bucket
+    U8 dam_id;                  	// this does not necessarily need to be a DAM, any gopherCAN module would work
+    U8 bucket_id;               	// the ID of this bucket. This is used with dam_id to identify the bucket
+    U16 ms_between_requests;    	// time between the requests in ms
+    U32 last_request;           	// last time, in ms, the bucket was requested
+    U8 num_of_params;           	// the number of parameters that will be stored in this bucket
+    U8 params_added;				// the number of parameters that are currently in this bucket
+    BUCKET_PARAM_INFO* param_ids;   // Pointer to the first node of an array of structs that represent each parameter in the bucket
 } DAM_BUCKET;
 
 

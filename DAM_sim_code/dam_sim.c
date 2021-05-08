@@ -103,6 +103,8 @@ void send_bucket_params(MODULE_ID sender, void* parameter,
     // set the number of parameters in each bucket
     send_can_command(PRIO_HIGH, DLM_ID, SET_BUCKET_SIZE, BUCKET_0, BUCKET_0_SIZE, 0, 0);
     send_can_command(PRIO_HIGH, DLM_ID, SET_BUCKET_SIZE, BUCKET_1, BUCKET_1_SIZE, 0, 0);
+
+    // test not sending the size first to the DLM
     if (counter)
     {
     	send_can_command(PRIO_HIGH, DLM_ID, SET_BUCKET_SIZE, BUCKET_2, BUCKET_2_SIZE, 0, 0);
@@ -111,7 +113,12 @@ void send_bucket_params(MODULE_ID sender, void* parameter,
 
     // Send a command for each parameter to tell what bucket it is in
     send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, 0, U8_TESTER_ID, BUCKET_0, 0);
+
+    // test sending the same parameter multiple times
     send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, 0, U16_TESTER_ID, BUCKET_0, 0);
+    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, 0, U16_TESTER_ID, BUCKET_0, 0);
+    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, 0, U16_TESTER_ID, BUCKET_0, 0);
+
     send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, 0, U32_TESTER_ID, BUCKET_0, 0);
     send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, 0, U64_TESTER_ID, BUCKET_1, 0);
     send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, 0, S8_TESTER_ID, BUCKET_1, 0);
@@ -123,7 +130,7 @@ void send_bucket_params(MODULE_ID sender, void* parameter,
 
 
 // bucket_ok
-//  this CAN command is recieved when a bucket is completely full. At this point
+//  this CAN command is received when a bucket is completely full. At this point
 //  the data can be safely requested
 void bucket_ok(MODULE_ID sender, void* parameter,
     U8 bucket_id, U8 UNUSED1, U8 UNUSED2, U8 UNUSED3)
