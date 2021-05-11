@@ -15,7 +15,7 @@
 //  A linked list is a good canidate for storing all of the buckets because they will need
 //  to be squentially run through in order to send the correct request, and the DLM
 //  must be able to handle a general amount of them.
-BUCKET_NODE bucket_list_head = {{0, 0, 0, 0, 0, NULL}, NULL};
+BUCKET_NODE bucket_list_head = {{0, 0, 0, 0, 0, 0, NULL}, NULL};
 
 // Head node pointer and first pointer to the linked list for all of the data points
 //  in the RAM data buffer. A linked list is a good candidate for many of the
@@ -112,8 +112,24 @@ void set_bucket_size(U8 sending_dam, void* UNUSED,
         above_bucket_node->next = bucket_node;
     }
 
-    // set the number of parameters in this bucket
+    // set the number of parameters in this bucket. No parameters have been added yet
+    bucket_node->bucket.params_added = 0;
     bucket_node->bucket.num_of_params = num_of_params;
+
+    // free any memory that may have been used for the old parameter array
+    free(bucket_node->bucket.param_ids);
+
+    // malloc some memory for the new parameter array
+    bucket_node->bucket.param_ids = (BUCKET_PARAM_INFO*)malloc(num_of_params * sizeof(BUCKET_PARAM_INFO));
+
+    // test if the malloc failed
+    if (bucket_node->bucket.param_ids == NULL)
+	{
+		// resend the command to restart the sequence and note the error
+		send_can_command(PRIO_HIGH, sending_dam, SEND_BUCKET_PARAMS, 0, 0, 0, 0);
+		last_mda_error = MDA_MALLOC_ERROR;
+		return;
+	}
 }
 
 
@@ -125,9 +141,9 @@ void add_param_to_bucket(U8 sending_dam, void* UNUSED,
     U8 param_id_msb, U8 param_id_lsb, U8 bucket_id, U8 UNUSED3)
 {
     BUCKET_NODE* bucket_node = bucket_list_head.next;
-    U16_LIST_NODE* param_node;
+    BUCKET_PARAM_INFO* param_array;
     U16 param_id;
-    U8 params_in_this_bucket = 0;
+    U8 c;
 
     // create the param_id from the two 8-bit chunks
     param_id = (param_id_msb << BITS_IN_BYTE) | param_id_lsb;
@@ -155,51 +171,37 @@ void add_param_to_bucket(U8 sending_dam, void* UNUSED,
         return;
     }
 
-    param_node = bucket_node->bucket.param_ids;
+    // check if this bucket is already full. If it is, tell the DAM this bucket is ready
+    // without adding the sent parameter
+    if (bucket_node->bucket.params_added == bucket_node->bucket.num_of_params)
+	{
+		send_can_command(PRIO_HIGH, sending_dam, BUCKET_OK, bucket_id, 0, 0, 0);
+	}
+
+    // get a pointer to the location of the parameter array
+    param_array = bucket_node->bucket.param_ids;
 
     // Check to make sure this parameter is not already in the list. Do not add it
     // if it is
-    while (param_node != NULL)
+    for (c = 0; c < bucket_node->bucket.params_added; c++)
     {
-        if (param_node->data == param_id)
+        if (param_array[c].parameter == param_id)
         {
             // this parameter is a duplicate. Return without adding a new one
             return;
         }
-
-        // move on to the next paramter node and note that there is another param
-        // in this bucket
-        param_node = param_node->next;
-        params_in_this_bucket++;
     }
 
-    // malloc some new memory for the U16 node to store the parameter
-    param_node = (U16_LIST_NODE*)malloc(sizeof(U16_LIST_NODE));
-    params_in_this_bucket++;
+    // set the details of the param_node in the first open spot of the array
+    param_array[c].parameter = param_id;
+    param_array[c].pending_responce = FALSE;
 
-    // test if malloc failed
-    if (param_node == NULL)
-    {
-        // a failed malloc will result in the parameter not being added,
-        // and in that case the bucket will not be completely filled, leading
-        // to the DLM asking the DAM to fill the bucket again. However these
-        // mallocs are unlikely to fail
-        last_mda_error = MDA_MALLOC_ERROR;
-        return;
-    }
-
-    // add this param to the front of the linked list. The order does not matter
-    // so it can be added to the front of the list
-    param_node->next = bucket_node->bucket.param_ids;
-    bucket_node->bucket.param_ids = param_node;
-
-    // set the details of the param_node
-    param_node->data = param_id;
-    param_node->pending_responce = FALSE;
+    // increase the number of parameters added to this bucket
+    bucket_node->bucket.params_added++;
 
     // if the number of params in this bucket is equal to the desired
     // size, send a BUCKET_OK command to the correct DAM
-    if (params_in_this_bucket == bucket_node->bucket.num_of_params)
+    if (bucket_node->bucket.params_added == bucket_node->bucket.num_of_params)
     {
         send_can_command(PRIO_HIGH, sending_dam, BUCKET_OK, bucket_id, 0, 0, 0);
     }
@@ -245,7 +247,8 @@ void request_all_buckets()
 {
 	// Skip the head node
     BUCKET_NODE* bucket_node = bucket_list_head.next;
-    U16_LIST_NODE* param_node;
+    BUCKET_PARAM_INFO* param_array;
+    U8 c;
 
     while(bucket_node != NULL)
     {
@@ -262,12 +265,12 @@ void request_all_buckets()
                 last_mda_error = MDA_CAN_ERROR;
             }
 
-            // set the pending responce flag for each parameter in this bucket to true
-            param_node = bucket_node->bucket.param_ids;
-            while (param_node != NULL)
+            // set the pending response flag for each parameter in this bucket to true
+            param_array = bucket_node->bucket.param_ids;
+            for (c = 0; c < bucket_node->bucket.params_added; c++)
             {
-                param_node->pending_responce = TRUE;
-                param_node = param_node->next;
+            	param_array->pending_responce = TRUE;
+            	param_array++;
             }
 
             // update the last request tick
@@ -290,28 +293,29 @@ void store_new_data()
 {
 	// Skip the head node
     BUCKET_NODE* bucket_node = bucket_list_head.next;
-    U16_LIST_NODE* param_node;
+    BUCKET_PARAM_INFO* param_array;
     CAN_INFO_STRUCT* param_info;
+    U8 c;
 
     // For each parameter in each bucket, check if the last time it was
     // recieved is sooner than its bucket was requested and has not been already written
     while (bucket_node != NULL)
     {
-        param_node = bucket_node->bucket.param_ids;
+        param_array = bucket_node->bucket.param_ids;
 
         // run through each parameter in the bucket
-        while (param_node != NULL)
+        for (c = 0; c < bucket_node->bucket.params_added; c++)
         {
             // get the CAN_INFO_STRUCT related to this parameter. Data stores the parameter ID in the node struct
-            param_info = (CAN_INFO_STRUCT*)(all_parameter_structs[param_node->data]);
+            param_info = (CAN_INFO_STRUCT*)(all_parameter_structs[param_array->parameter]);
 
             // if the parameter is pending an update and the last RX of the param is after the
             // request was sent, it needs to be added to RAM
-            if (param_node->pending_responce == TRUE
+            if (param_array->pending_responce == TRUE
                 && param_info->last_rx >= bucket_node->bucket.last_request)
             {
                 // add the param data to RAM
-                if (add_param_to_ram(param_node, bucket_node))
+                if (add_param_to_ram(param_array, bucket_node))
                 {
                 	last_mda_error = MDA_MALLOC_ERROR;
 
@@ -324,11 +328,11 @@ void store_new_data()
                 HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
 
                 // disable the pending responce flag
-                param_node->pending_responce = FALSE;
+                param_array->pending_responce = FALSE;
             }
 
             // move on to the next parameter
-            param_node = param_node->next;
+            param_array++;
         }
         
         // move on to the next bucket
@@ -339,7 +343,7 @@ void store_new_data()
 
 // add_param_to_ram
 //  Function to add the data of a specific parameter to the RAM buffer
-S8 add_param_to_ram(U16_LIST_NODE* param_node, BUCKET_NODE* bucket_node)
+S8 add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node)
 {
     // Data will be stored in a linked list of nodes that include what parameter
     //  (param_id), the ms since startup that the datapoint was requested, and the param data.
@@ -348,10 +352,10 @@ S8 add_param_to_ram(U16_LIST_NODE* param_node, BUCKET_NODE* bucket_node)
     DATA_INFO_NODE* data_node;
     CAN_INFO_STRUCT* can_param_struct;
 
-    can_param_struct = (CAN_INFO_STRUCT*)(all_parameter_structs[param_node->data]);
+    can_param_struct = (CAN_INFO_STRUCT*)(all_parameter_structs[param_info->parameter]);
 
     // Choose the correct type of data node based on the parameter data type, then malloc the memory needed
-    switch (parameter_data_types[param_node->data])
+    switch (parameter_data_types[param_info->parameter])
 	{
 	case UNSIGNED8: ;
         U8_DATA_NODE* u8_data_node = (U8_DATA_NODE*)malloc(sizeof(U8_DATA_NODE));
@@ -489,7 +493,7 @@ S8 add_param_to_ram(U16_LIST_NODE* param_node, BUCKET_NODE* bucket_node)
     data_node->data_time = bucket_node->bucket.last_request;
 
     // the parameter id is stored in the data of the parameter node
-    data_node->param = param_node->data;
+    data_node->param = param_info->parameter;
 
     // add the new node to the front of the list, after the head node
     data_node->next = ram_data_head->next;
