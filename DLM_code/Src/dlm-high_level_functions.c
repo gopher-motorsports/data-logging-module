@@ -34,14 +34,10 @@ DATA_INFO_NODE ram_data = {0, 0, NULL};
 CAN_HandleTypeDef* dlm_hcan1;
 CAN_HandleTypeDef* dlm_hcan2;
 
-
-// TODO these are for testing RAM-to-storage. Do better. Prob use the date from the RTC to
-// build the filename
-char dlm_file_name[MAX_FILENAME_SIZE] = "/logging_test.gdat";
+char dlm_file_name[MAX_FILENAME_SIZE];
 
 // variable to store the logging status
 LOGGING_STATUS logging_status = NOT_LOGGING;
-
 
 // dlm_init
 //  This function will handle power-on behavior, all completely TBD
@@ -55,8 +51,8 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2)
 	// initialize CAN
 	// NOTE: CAN will also need to be added in CubeMX and code must be generated
 	// Check the STM_CAN repo for the file "Fxxx CAN Config Settings.pptx" for the correct settings
-	if (init_can(dlm_hcan1, DLM_ID, MASTER)
-			|| init_can(dlm_hcan2, DLM_ID, SLAVE))
+	if (init_can(dlm_hcan1, DLM_ID, BXTYPE_MASTER)
+			|| init_can(dlm_hcan2, DLM_ID, BXTYPE_SLAVE))
 	{
 		// an error has occurred, stay here
 		while (1);
@@ -122,7 +118,7 @@ void move_ram_data_to_storage()
 	}
 
     // TODO Use some logic to determine when the best time is to write to storage. Right
-	// now it just writes every second
+	// now it just writes every 2 seconds
 	write_data_and_handle_errors();
 }
 
