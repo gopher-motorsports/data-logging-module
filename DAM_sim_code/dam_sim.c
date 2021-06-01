@@ -23,7 +23,7 @@ void dam_sim_init(CAN_HandleTypeDef* hcan_ptr)
     example_hcan = hcan_ptr;
 
     // init gopherCAN stuff
-    if (init_can(example_hcan, this_module, MASTER))
+    if (init_can(example_hcan, this_module, BXTYPE_MASTER))
 	{
 		// an error has occurred, stay here
 		while (1);
@@ -112,20 +112,20 @@ void send_bucket_params(MODULE_ID sender, void* parameter,
     counter++;
 
     // Send a command for each parameter to tell what bucket it is in
-    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, 0, U8_TESTER_ID, BUCKET_0, 0);
+    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, BUCKET_0, 0, U8_TESTER_ID, 0);
 
     // test sending the same parameter multiple times
-    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, 0, U16_TESTER_ID, BUCKET_0, 0);
-    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, 0, U16_TESTER_ID, BUCKET_0, 0);
-    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, 0, U16_TESTER_ID, BUCKET_0, 0);
+    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, BUCKET_0, 0, U16_TESTER_ID, 0);
+    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, BUCKET_0, 0, U16_TESTER_ID, 0);
+    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, BUCKET_0, 0, U16_TESTER_ID, 0);
 
-    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, 0, U32_TESTER_ID, BUCKET_0, 0);
-    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, 0, U64_TESTER_ID, BUCKET_1, 0);
-    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, 0, S8_TESTER_ID, BUCKET_1, 0);
-    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, 0, S16_TESTER_ID, BUCKET_1, 0);
-    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, 0, S32_TESTER_ID, BUCKET_2, 0);
-    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, 0, S64_TESTER_ID, BUCKET_2, 0);
-    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, 0, FLOAT_TESTER_ID, BUCKET_2, 0);
+    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, BUCKET_0, 0, U32_TESTER_ID, 0);
+    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, BUCKET_1, 0, U64_TESTER_ID, 0);
+    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, BUCKET_1, 0, S8_TESTER_ID, 0);
+    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, BUCKET_1, 0, S16_TESTER_ID, 0);
+    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, BUCKET_2, 0, S32_TESTER_ID, 0);
+    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, BUCKET_2, 0, S64_TESTER_ID, 0);
+    send_can_command(PRIO_HIGH, DLM_ID, ADD_PARAM_TO_BUCKET, BUCKET_2, 0, FLOAT_TESTER_ID, 0);
 }
 
 
@@ -135,22 +135,28 @@ void send_bucket_params(MODULE_ID sender, void* parameter,
 void bucket_ok(MODULE_ID sender, void* parameter,
     U8 bucket_id, U8 UNUSED1, U8 UNUSED2, U8 UNUSED3)
 {
-    // Assign a frequency to the bucket that was givin the ok
+    // Assign a frequency to the bucket that was given the ok
     switch (bucket_id)
     {
     case BUCKET_0:
         send_can_command(PRIO_HIGH, DLM_ID, ASSIGN_BUCKET_TO_FRQ,
                 BUCKET_0, 0, BUCKET_0_RQ_FRQ, 0);
+        send_can_command(PRIO_HIGH, DLM_ID, ASSIGN_BUCKET_TO_FRQ,
+                        BUCKET_0, 0, BUCKET_0_RQ_FRQ, 0);
         break;
 
     case BUCKET_1:
         send_can_command(PRIO_HIGH, DLM_ID, ASSIGN_BUCKET_TO_FRQ,
                 BUCKET_1, 0, BUCKET_1_RQ_FRQ, 0);
+        send_can_command(PRIO_HIGH, DLM_ID, ASSIGN_BUCKET_TO_FRQ,
+                        BUCKET_1, 0, BUCKET_1_RQ_FRQ, 0);
         break;
 
     case BUCKET_2:
         send_can_command(PRIO_HIGH, DLM_ID, ASSIGN_BUCKET_TO_FRQ,
                 BUCKET_2, 0, BUCKET_2_RQ_FRQ, 0);
+        send_can_command(PRIO_HIGH, DLM_ID, ASSIGN_BUCKET_TO_FRQ,
+                        BUCKET_2, 0, BUCKET_2_RQ_FRQ, 0);
         break;
     }
 }

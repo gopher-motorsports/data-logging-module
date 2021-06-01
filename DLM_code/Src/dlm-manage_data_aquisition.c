@@ -26,10 +26,6 @@ DATA_INFO_NODE* ram_data_head;
 // variable to store the last error
 MDA_ERROR last_mda_error = NO_MDA_ERROR;
 
-// from GopherCAN.c
-extern void* all_parameter_structs[NUM_OF_PARAMETERS];
-extern U8 parameter_data_types[NUM_OF_PARAMETERS];
-
 
 // manage_data_aquisition_init
 //  Assign the pointer to the head node, set up the CAN commands, and tell the DAMs to start
@@ -138,7 +134,7 @@ void set_bucket_size(U8 sending_dam, void* UNUSED,
 //  called, this will add the param inputted to the correct bucket with the assosiated
 //  DAM included. Built to handle a general amount of DAMs, params, and buckets
 void add_param_to_bucket(U8 sending_dam, void* UNUSED,
-    U8 param_id_msb, U8 param_id_lsb, U8 bucket_id, U8 UNUSED3)
+	U8 bucket_id, U8 param_id_msb, U8 param_id_lsb, U8 UNUSED3)
 {
     BUCKET_NODE* bucket_node = bucket_list_head.next;
     BUCKET_PARAM_INFO* param_array;
@@ -209,7 +205,7 @@ void add_param_to_bucket(U8 sending_dam, void* UNUSED,
 
 
 // assign_bucket_to_frq
-//  This will take the inputted DAM and bucket ID and set the time to wait between each request
+//  This will take the inputed DAM and bucket ID and set the time to wait between each request
 //  in ms. Designed to be called as a CAN command coming from a DAM
 void assign_bucket_to_frq(U8 sending_dam, void* UNUSED,
     U8 bucket_id, U8 ms_between_requests_msb, U8 ms_between_requests_lsb, U8 UNUSED3)
