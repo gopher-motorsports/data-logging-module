@@ -149,6 +149,21 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+
+  // TODO stack overflow testing
+  void vApplicationStackOverflowHook(TaskHandle_t xTask, signed char *pcTaskName)
+  {
+	  // turn off the RTOS
+	  vPortEndScheduler();
+
+	  // toggle the blue LED in the case of a stack overflow
+	  while (1)
+	  {
+		  HAL_Delay(250);
+		  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7);
+	  }
+  }
+
   /* USER CODE END RTOS_THREADS */
 
   /* Start scheduler */
@@ -193,7 +208,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLM = 8;
   RCC_OscInitStruct.PLL.PLLN = 192;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = 8;
+  RCC_OscInitStruct.PLL.PLLQ = 15;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();

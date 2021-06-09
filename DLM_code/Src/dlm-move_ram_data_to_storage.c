@@ -155,7 +155,9 @@ S8 write_data_to_storage()
     }
 
     // sync the file. this replaces opening and closing the file
-    if ((fresult = f_sync(&SDFile)) != FR_OK)
+    fresult = f_sync(&SDFile);
+
+    if (fresult != FR_OK)
 	{
 		file_error_code = fresult;
 		return FILE_ERROR;
