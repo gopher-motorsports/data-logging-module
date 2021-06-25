@@ -140,7 +140,7 @@ int main(void)
   can_loop_taskHandle = osThreadCreate(osThread(can_loop_task), NULL);
 
   /* definition and creation of dlm_manage_data */
-  osThreadDef(dlm_manage_data, dlm_main, osPriorityBelowNormal, 0, 512);
+  osThreadDef(dlm_manage_data, dlm_main, osPriorityNormal, 0, 512);
   dlm_manage_dataHandle = osThreadCreate(osThread(dlm_manage_data), NULL);
 
   /* definition and creation of move_ram_to_sd_ */
@@ -208,7 +208,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLM = 8;
   RCC_OscInitStruct.PLL.PLLN = 192;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = 15;
+  RCC_OscInitStruct.PLL.PLLQ = 8;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();

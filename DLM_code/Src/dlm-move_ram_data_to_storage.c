@@ -11,6 +11,8 @@
 #include "stm32f7xx_hal.h"
 #include "stm32f7xx_hal_gpio.h"
 #include "fatfs.h"
+#include "dlm-mutex.h"
+#include "cmsis_os.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -32,6 +34,7 @@ const char* orig_actual_file_name;							// needed for if the file did not open 
 char actual_file_name[MAX_FILENAME_SIZE + MAX_APPEND_SIZE];	// give extra characters for numbers on the end, just in case
 SD_STATUS sd_status = SD_NOT_MOUNTED;
 U8 error_counter = 0;
+
 
 // move_ram_data_to_storage_init
 //  This function sets the local pointers to the correct values. Mounting the SD card is handled in the
@@ -133,8 +136,30 @@ S8 write_data_to_storage()
     // run through each data node in the RAM LL
     while (data_node != NULL)
     {
-        // build the data string for this node
-        build_data_string(data_point_str, data_node);
+    	// get the mutex. It may not be needed for any nodes but the first data node after the head
+    	while (!get_mutex_lock(&ram_data_mutex))
+    	{
+    		osDelay(1);
+    	}
+
+    	// Dont run any other tasks while modifying the RAM buffer
+    	taskENTER_CRITICAL();
+
+		// build the data string for this node
+		build_data_string(data_point_str, data_node);
+
+		// remove the pointer from the LL
+		data_node_above->next = data_node->next;
+
+		// free the memory for this node, stdlib is smart enough to know how much memory was
+		// originally malloced
+		free(data_node);
+
+		// move on to the next data node
+		data_node = data_node_above->next;
+
+		taskEXIT_CRITICAL();
+    	release_mutex(&ram_data_mutex);
 
         // append the file with this new string
         if ((fresult = f_write(&SDFile, data_point_str, DATA_POINT_STORAGE_SIZE, (UINT*)(&bytes_written))) != FR_OK)
@@ -142,16 +167,6 @@ S8 write_data_to_storage()
         	file_error_code = fresult;
         	return FILE_ERROR;
         }
-
-        // remove the pointer from the LL
-        data_node_above->next = data_node->next;
-
-        // free the memory for this node, stdlib is smart enough to know how much memory was
-        // originally malloced
-        free(data_node);
-
-        // move on to the next data node
-        data_node = data_node_above->next;
     }
 
     // sync the file. this replaces opening and closing the file

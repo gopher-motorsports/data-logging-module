@@ -4,11 +4,13 @@
 
 // includes
 #include "dlm-manage_data_aquisition.h"
+#include "dlm-mutex.h"
 #include <stdlib.h>
 #include "dlm-storage_structs.h"
 #include "base_types.h"
 #include "GopherCAN.h"
 #include "stm32f7xx_hal_gpio.h"
+#include "cmsis_os.h"
 
 
 // The head node for the linked list of all of the buckets.
@@ -294,7 +296,7 @@ void store_new_data()
     U8 c;
 
     // For each parameter in each bucket, check if the last time it was
-    // recieved is sooner than its bucket was requested and has not been already written
+    // received is sooner than its bucket was requested and has not been already written
     while (bucket_node != NULL)
     {
         param_array = bucket_node->bucket.param_ids;
@@ -491,9 +493,21 @@ S8 add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node)
     // the parameter id is stored in the data of the parameter node
     data_node->param = param_info->parameter;
 
-    // add the new node to the front of the list, after the head node
-    data_node->next = ram_data_head->next;
-    ram_data_head->next = data_node;
+    while (!get_mutex_lock(&ram_data_mutex))
+    {
+    	osDelay(1);
+    }
+
+    // DEBUG just trying shit at this point
+    taskENTER_CRITICAL();
+
+   	// add the new node to the front of the list, after the head node
+   	data_node->next = ram_data_head->next;
+  	ram_data_head->next = data_node;
+
+  	// DEBUG
+  	taskEXIT_CRITICAL();
+    release_mutex(&ram_data_mutex);
 
     return DLM_SUCCESS;
 }
