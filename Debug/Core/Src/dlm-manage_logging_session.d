@@ -1,7 +1,7 @@
 Core/Src/dlm-manage_logging_session.o: \
  ../Core/Src/dlm-manage_logging_session.c \
  ../Core/Inc/dlm-manage_logging_session.h \
- C:/Users/calja/github_files/gophercan-lib/base_types.h \
+ /home/cal/github_files/gophercan-lib/base_types.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal.h \
  ../Core/Inc/stm32f7xx_hal_conf.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_rcc.h \
@@ -35,17 +35,17 @@ Core/Src/dlm-manage_logging_session.o: \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_ll_sdmmc.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_tim.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_tim_ex.h \
- C:/Users/calja/github_files/gophercan-lib/GopherCAN.h \
+ /home/cal/github_files/gophercan-lib/GopherCAN.h \
  ../Core/Inc/GopherCAN_config.h \
- C:/Users/calja/github_files/gophercan-lib/base_types.h \
- C:/Users/calja/github_files/gophercan-lib/GopherCAN_structs.h \
- C:/Users/calja/github_files/gophercan-lib/GopherCAN_ids.h \
- C:/Users/calja/github_files/gophercan-lib/gophercan_params.h \
- C:/Users/calja/github_files/gophercan-lib/GopherCAN_ring_buffer.h
+ /home/cal/github_files/gophercan-lib/base_types.h \
+ /home/cal/github_files/gophercan-lib/GopherCAN_structs.h \
+ /home/cal/github_files/gophercan-lib/GopherCAN_ids.h \
+ /home/cal/github_files/gophercan-lib/gophercan_params.h \
+ /home/cal/github_files/gophercan-lib/GopherCAN_ring_buffer.h
 
 ../Core/Inc/dlm-manage_logging_session.h:
 
-C:/Users/calja/github_files/gophercan-lib/base_types.h:
+/home/cal/github_files/gophercan-lib/base_types.h:
 
 ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal.h:
 
@@ -113,16 +113,16 @@ C:/Users/calja/github_files/gophercan-lib/base_types.h:
 
 ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_tim_ex.h:
 
-C:/Users/calja/github_files/gophercan-lib/GopherCAN.h:
+/home/cal/github_files/gophercan-lib/GopherCAN.h:
 
 ../Core/Inc/GopherCAN_config.h:
 
-C:/Users/calja/github_files/gophercan-lib/base_types.h:
+/home/cal/github_files/gophercan-lib/base_types.h:
 
-C:/Users/calja/github_files/gophercan-lib/GopherCAN_structs.h:
+/home/cal/github_files/gophercan-lib/GopherCAN_structs.h:
 
-C:/Users/calja/github_files/gophercan-lib/GopherCAN_ids.h:
+/home/cal/github_files/gophercan-lib/GopherCAN_ids.h:
 
-C:/Users/calja/github_files/gophercan-lib/gophercan_params.h:
+/home/cal/github_files/gophercan-lib/gophercan_params.h:
 
-C:/Users/calja/github_files/gophercan-lib/GopherCAN_ring_buffer.h:
+/home/cal/github_files/gophercan-lib/GopherCAN_ring_buffer.h:

@@ -1,14 +1,14 @@
 Core/Src/dlm-move_ram_data_to_storage.o: \
  ../Core/Src/dlm-move_ram_data_to_storage.c \
  ../Core/Inc/dlm-move_ram_data_to_storage.h \
- C:/Users/calja/github_files/gophercan-lib/base_types.h \
- C:/Users/calja/github_files/gophercan-lib/GopherCAN.h \
+ /home/cal/github_files/gophercan-lib/base_types.h \
+ /home/cal/github_files/gophercan-lib/GopherCAN.h \
  ../Core/Inc/GopherCAN_config.h \
- C:/Users/calja/github_files/gophercan-lib/base_types.h \
- C:/Users/calja/github_files/gophercan-lib/GopherCAN_structs.h \
- C:/Users/calja/github_files/gophercan-lib/GopherCAN_ids.h \
- C:/Users/calja/github_files/gophercan-lib/gophercan_params.h \
- C:/Users/calja/github_files/gophercan-lib/GopherCAN_ring_buffer.h \
+ /home/cal/github_files/gophercan-lib/base_types.h \
+ /home/cal/github_files/gophercan-lib/GopherCAN_structs.h \
+ /home/cal/github_files/gophercan-lib/GopherCAN_ids.h \
+ /home/cal/github_files/gophercan-lib/gophercan_params.h \
+ /home/cal/github_files/gophercan-lib/GopherCAN_ring_buffer.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal.h \
  ../Core/Inc/stm32f7xx_hal_conf.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_rcc.h \
@@ -70,21 +70,21 @@ Core/Src/dlm-move_ram_data_to_storage.o: \
 
 ../Core/Inc/dlm-move_ram_data_to_storage.h:
 
-C:/Users/calja/github_files/gophercan-lib/base_types.h:
+/home/cal/github_files/gophercan-lib/base_types.h:
 
-C:/Users/calja/github_files/gophercan-lib/GopherCAN.h:
+/home/cal/github_files/gophercan-lib/GopherCAN.h:
 
 ../Core/Inc/GopherCAN_config.h:
 
-C:/Users/calja/github_files/gophercan-lib/base_types.h:
+/home/cal/github_files/gophercan-lib/base_types.h:
 
-C:/Users/calja/github_files/gophercan-lib/GopherCAN_structs.h:
+/home/cal/github_files/gophercan-lib/GopherCAN_structs.h:
 
-C:/Users/calja/github_files/gophercan-lib/GopherCAN_ids.h:
+/home/cal/github_files/gophercan-lib/GopherCAN_ids.h:
 
-C:/Users/calja/github_files/gophercan-lib/gophercan_params.h:
+/home/cal/github_files/gophercan-lib/gophercan_params.h:
 
-C:/Users/calja/github_files/gophercan-lib/GopherCAN_ring_buffer.h:
+/home/cal/github_files/gophercan-lib/GopherCAN_ring_buffer.h:
 
 ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal.h:
 
