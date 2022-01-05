@@ -1,0 +1,13 @@
+main.c:86:5:main	104	static
+main.c:190:6:SystemClock_Config	232	static
+main.c:252:13:MX_CAN1_Init	8	static
+main.c:289:13:MX_CAN2_Init	8	static
+main.c:326:13:MX_RTC_Init	64	static
+main.c:411:13:MX_SDMMC1_SD_Init	4	static
+main.c:437:13:MX_DMA_Init	16	static
+main.c:458:13:MX_GPIO_Init	48	static
+main.c:497:6:can_loop	16	static
+main.c:516:6:dlm_main	16	static
+main.c:535:6:move_ram_to_sd	16	static
+main.c:555:6:HAL_TIM_PeriodElapsedCallback	16	static
+main.c:572:6:Error_Handler	4	static,ignoring_inline_asm

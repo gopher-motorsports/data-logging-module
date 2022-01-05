@@ -1,0 +1,4 @@
+dlm-manage_logging_session.c:21:6:manage_logging_session_init	8	static
+dlm-manage_logging_session.c:32:6:generate_filename	40	static
+dlm-manage_logging_session.c:46:6:set_rtc_time	40	static
+dlm-manage_logging_session.c:64:6:set_rtc_date	24	static

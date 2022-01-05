@@ -1,0 +1,2 @@
+dlm-mutex.c:15:9:get_mutex_lock	16	static
+dlm-mutex.c:31:6:release_mutex	16	static
