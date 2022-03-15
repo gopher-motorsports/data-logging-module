@@ -28,39 +28,54 @@
 
 // Global Variables
 // this is the head node for the RAM data linked list
-DATA_INFO_NODE ram_data = {0, 0, NULL};
+DATA_INFO_NODE ram_data =
+{
+		.data_time = 0,
+		.param = 0,
+		.next = NULL
+};
 
 // the HAL_CAN structs
 CAN_HandleTypeDef* dlm_hcan1;
 CAN_HandleTypeDef* dlm_hcan2;
+CAN_HandleTypeDef* dlm_hcan3;
 
 char dlm_file_name[MAX_FILENAME_SIZE];
 
 // variable to store the logging status
 LOGGING_STATUS logging_status = NOT_LOGGING;
 
+// DEBUG
+#include "GopherCAN.h"
+#include "main.h"
+static void change_led_state(U8 sender, void* parameter, U8 remote_param, U8 UNUSED1, U8 UNUSED2, U8 UNUSED3);
+
 // dlm_init
 //  This function will handle power-on behavior, all completely TBD
 //  according to everything else the module does
-void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2)
+void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2,
+		CAN_HandleTypeDef* hcan_ptr3)
 {
     // init GopherCAN
 	dlm_hcan1 = hcan_ptr1;
 	dlm_hcan2 = hcan_ptr2;
+	dlm_hcan3 = hcan_ptr3;
 
 	// initialize CAN
 	// NOTE: CAN will also need to be added in CubeMX and code must be generated
 	// Check the STM_CAN repo for the file "Fxxx CAN Config Settings.pptx" for the correct settings
 	if (init_can(dlm_hcan1, DLM_ID, BXTYPE_MASTER)
-			|| init_can(dlm_hcan2, DLM_ID, BXTYPE_SLAVE))
+			|| init_can(dlm_hcan2, DLM_ID, BXTYPE_SLAVE)
+			|| init_can(dlm_hcan3, DLM_ID, BXTYPE_MASTER))
 	{
 		// an error has occurred, stay here
 		while (1);
 	}
 
 	// Declare which bus is which using define_can_bus
-	define_can_bus(dlm_hcan2, GCAN0, 0);
-	define_can_bus(dlm_hcan1, GCAN1, 1);
+	define_can_bus(dlm_hcan1, GCAN0, 0);
+	define_can_bus(dlm_hcan2, GCAN1, 1);
+	define_can_bus(dlm_hcan3, GCAN2, 2);
 
 	// enable the tester variables
 	set_all_params_state(TRUE);
@@ -75,6 +90,16 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2)
 
     // in REV1 we will start the logging session right away
     begin_logging_session();
+
+    // DEBUG testing all CAN buses
+    add_custom_can_func(SET_LED_STATE, &change_led_state, TRUE, NULL);
+}
+
+
+static void change_led_state(U8 sender, void* parameter, U8 remote_param, U8 UNUSED1, U8 UNUSED2, U8 UNUSED3)
+{
+	HAL_GPIO_WritePin(GPIOB, LED1_sd_write_Pin, !!remote_param);
+	return;
 }
 
 
@@ -209,6 +234,8 @@ void can_service_loop()
 	//service_can_rx_hardware(dlm_hcan1, CAN_RX_FIFO1);
 	//service_can_rx_hardware(dlm_hcan2, CAN_RX_FIFO0);
 	//service_can_rx_hardware(dlm_hcan2, CAN_RX_FIFO1);
+	//service_can_rx_hardware(dlm_hcan3, CAN_RX_FIFO0);
+	//service_can_rx_hardware(dlm_hcan3, CAN_RX_FIFO1);
 
 	// handle each RX message in the buffer
 	if (service_can_rx_buffer())
@@ -218,6 +245,7 @@ void can_service_loop()
 
 	service_can_tx_hardware(dlm_hcan1);
 	service_can_tx_hardware(dlm_hcan2);
+	service_can_tx_hardware(dlm_hcan3);
 }
 
 

@@ -28,7 +28,7 @@
 #define CAN_ROUTER
 
 // up to 3 busses are supported. That is the most available in the STM32 series
-#define NUM_OF_BUSSES 2
+#define NUM_OF_BUSSES 3
 #endif
 
 #endif

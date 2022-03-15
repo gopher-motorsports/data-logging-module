@@ -268,7 +268,8 @@ S8 mount_sd_card()
 	FRESULT fresult;
 
 	// check if the SD card is even inserted using the GPIOpin
-	if (HAL_GPIO_ReadPin(SD_Detected_GPIO_Port, SD_Detected_Pin) == GPIO_PIN_RESET)
+	//if (HAL_GPIO_ReadPin(SD_Detected_GPIO_Port, SD_Detected_Pin) == GPIO_PIN_RESET)
+	if (HAL_GPIO_ReadPin(SD_Detected_GPIO_Port, SD_Detected_Pin) == GPIO_PIN_SET)
 	{
 		// the SD is not inserted. Do not try to mount as it can cause a hardfault
 		sd_status = SD_NOT_INSERTED;

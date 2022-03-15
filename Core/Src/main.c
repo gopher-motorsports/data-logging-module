@@ -21,7 +21,6 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "fatfs.h"
-#include "dlm-high_level_functions.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -44,6 +43,7 @@
 /* Private variables ---------------------------------------------------------*/
 CAN_HandleTypeDef hcan1;
 CAN_HandleTypeDef hcan2;
+CAN_HandleTypeDef hcan3;
 
 RTC_HandleTypeDef hrtc;
 
@@ -66,6 +66,7 @@ static void MX_CAN1_Init(void);
 static void MX_CAN2_Init(void);
 static void MX_SDMMC1_SD_Init(void);
 static void MX_RTC_Init(void);
+static void MX_CAN3_Init(void);
 void can_loop(void const * argument);
 void dlm_main(void const * argument);
 void move_ram_to_sd(void const * argument);
@@ -110,12 +111,13 @@ int main(void)
   MX_DMA_Init();
   MX_CAN1_Init();
   MX_CAN2_Init();
+  MX_CAN3_Init();
   MX_SDMMC1_SD_Init();
   MX_FATFS_Init();
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
 
-  dlm_init(&hcan1, &hcan2);
+  dlm_init(&hcan1, &hcan2, &hcan3);
 
   /* USER CODE END 2 */
 
@@ -319,6 +321,43 @@ static void MX_CAN2_Init(void)
 }
 
 /**
+  * @brief CAN3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_CAN3_Init(void)
+{
+
+  /* USER CODE BEGIN CAN3_Init 0 */
+
+  /* USER CODE END CAN3_Init 0 */
+
+  /* USER CODE BEGIN CAN3_Init 1 */
+
+  /* USER CODE END CAN3_Init 1 */
+  hcan3.Instance = CAN3;
+  hcan3.Init.Prescaler = 6;
+  hcan3.Init.Mode = CAN_MODE_NORMAL;
+  hcan3.Init.SyncJumpWidth = CAN_SJW_1TQ;
+  hcan3.Init.TimeSeg1 = CAN_BS1_6TQ;
+  hcan3.Init.TimeSeg2 = CAN_BS2_1TQ;
+  hcan3.Init.TimeTriggeredMode = DISABLE;
+  hcan3.Init.AutoBusOff = ENABLE;
+  hcan3.Init.AutoWakeUp = ENABLE;
+  hcan3.Init.AutoRetransmission = DISABLE;
+  hcan3.Init.ReceiveFifoLocked = DISABLE;
+  hcan3.Init.TransmitFifoPriority = DISABLE;
+  if (HAL_CAN_Init(&hcan3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN CAN3_Init 2 */
+
+  /* USER CODE END CAN3_Init 2 */
+
+}
+
+/**
   * @brief RTC Initialization Function
   * @param None
   * @retval None
@@ -463,6 +502,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOG_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
