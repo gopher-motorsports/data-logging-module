@@ -1,8 +1,0 @@
-dlm-manage_data_aquisition.c:35:6:manage_data_aquisition_init	32	static
-dlm-manage_data_aquisition.c:52:6:manage_data_aquisition_deinit	4	static
-dlm-manage_data_aquisition.c:62:6:set_bucket_size	40	static
-dlm-manage_data_aquisition.c:138:6:add_param_to_bucket	48	static
-dlm-manage_data_aquisition.c:212:6:assign_bucket_to_frq	24	static
-dlm-manage_data_aquisition.c:244:6:request_all_buckets	40	static
-dlm-manage_data_aquisition.c:290:6:store_new_data	24	static
-dlm-manage_data_aquisition.c:344:4:add_param_to_ram	64	static

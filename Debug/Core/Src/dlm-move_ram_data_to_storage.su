@@ -1,7 +1,0 @@
-dlm-move_ram_data_to_storage.c:42:6:move_ram_data_to_storage_init	16	static
-dlm-move_ram_data_to_storage.c:55:4:write_data_and_handle_errors	16	static
-dlm-move_ram_data_to_storage.c:121:4:write_data_to_storage	32	static
-dlm-move_ram_data_to_storage.c:192:6:build_data_string	48	static
-dlm-move_ram_data_to_storage.c:222:8:convert_data_to_dpf	16	static
-dlm-move_ram_data_to_storage.c:266:4:mount_sd_card	16	static
-dlm-move_ram_data_to_storage.c:309:4:create_new_file	32	static
