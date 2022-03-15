@@ -21,6 +21,8 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "fatfs.h"
+#include "freertos.h"
+#include "dlm-high_level_functions.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -139,33 +141,19 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of can_loop_task */
-  osThreadDef(can_loop_task, can_loop, osPriorityHigh, 0, 512);
+  osThreadDef(can_loop_task, can_loop, osPriorityHigh, 0, 1024);
   can_loop_taskHandle = osThreadCreate(osThread(can_loop_task), NULL);
 
   /* definition and creation of dlm_manage_data */
-  osThreadDef(dlm_manage_data, dlm_main, osPriorityNormal, 0, 512);
+  osThreadDef(dlm_manage_data, dlm_main, osPriorityNormal, 0, 1024);
   dlm_manage_dataHandle = osThreadCreate(osThread(dlm_manage_data), NULL);
 
   /* definition and creation of move_ram_to_sd_ */
-  osThreadDef(move_ram_to_sd_, move_ram_to_sd, osPriorityNormal, 0, 1024);
+  osThreadDef(move_ram_to_sd_, move_ram_to_sd, osPriorityNormal, 0, 2048);
   move_ram_to_sd_Handle = osThreadCreate(osThread(move_ram_to_sd_), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-
-  // TODO stack overflow testing
-  void vApplicationStackOverflowHook(TaskHandle_t xTask, signed char *pcTaskName)
-  {
-	  // turn off the RTOS
-	  vPortEndScheduler();
-
-	  // toggle the blue LED in the case of a stack overflow
-	  while (1)
-	  {
-		  HAL_Delay(250);
-		  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7);
-	  }
-  }
 
   /* USER CODE END RTOS_THREADS */
 
