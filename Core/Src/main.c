@@ -21,11 +21,10 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "fatfs.h"
-#include "freertos.h"
-#include "dlm-high_level_functions.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "dlm-high_level_functions.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,6 +55,7 @@ DMA_HandleTypeDef hdma_sdmmc1_rx;
 osThreadId can_loop_taskHandle;
 osThreadId dlm_manage_dataHandle;
 osThreadId move_ram_to_sd_Handle;
+osThreadId transmit_ram_Handle;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -72,6 +72,7 @@ static void MX_CAN3_Init(void);
 void can_loop(void const * argument);
 void dlm_main(void const * argument);
 void move_ram_to_sd(void const * argument);
+void transmit_ram(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -113,10 +114,10 @@ int main(void)
   MX_DMA_Init();
   MX_CAN1_Init();
   MX_CAN2_Init();
-  MX_CAN3_Init();
   MX_SDMMC1_SD_Init();
   MX_FATFS_Init();
   MX_RTC_Init();
+  MX_CAN3_Init();
   /* USER CODE BEGIN 2 */
 
   dlm_init(&hcan1, &hcan2, &hcan3);
@@ -151,6 +152,10 @@ int main(void)
   /* definition and creation of move_ram_to_sd_ */
   osThreadDef(move_ram_to_sd_, move_ram_to_sd, osPriorityNormal, 0, 2048);
   move_ram_to_sd_Handle = osThreadCreate(osThread(move_ram_to_sd_), NULL);
+
+  /* definition and creation of transmit_ram_ */
+  osThreadDef(transmit_ram_, transmit_ram, osPriorityNormal, 0, 2048);
+  transmit_ram_Handle = osThreadCreate(osThread(transmit_ram_), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -570,6 +575,25 @@ void move_ram_to_sd(void const * argument)
 	  move_ram_data_to_storage();
   }
   /* USER CODE END move_ram_to_sd */
+}
+
+/* USER CODE BEGIN Header_transmit_ram */
+/**
+* @brief Function implementing the transmit_ram_ thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_transmit_ram */
+void transmit_ram(void const * argument)
+{
+  /* USER CODE BEGIN transmit_ram */
+  /* Infinite loop */
+  for(;;)
+  {
+	  osDelay(2000);
+	  transmit_ram_data();
+  }
+  /* USER CODE END transmit_ram */
 }
 
  /**

@@ -24,6 +24,7 @@
 #include "dlm-manage_data_aquisition.h"
 #include "dlm-move_ram_data_to_storage.h"
 #include "dlm-manage_logging_session.h"
+#include "dlm-transmit_ram_data.h"
 
 
 // Global Variables
@@ -87,6 +88,8 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2,
 	manage_logging_session_init(dlm_file_name);
     manage_data_aquisition_init(&ram_data);
     move_ram_data_to_storage_init(&ram_data, dlm_file_name);
+    transmit_ram_data_init(&ram_data);
+
 
     // in REV1 we will start the logging session right away
     begin_logging_session();
@@ -148,16 +151,17 @@ void move_ram_data_to_storage()
 }
 
 
-// interface_with_vtm
-//  This function will handle sending the appropriate data to the VTM 
-//  over some interface. How much data is sent and how the data is sent
-//  is still TBD depending on the on-car telemety hardware
+// transmit_ram_data
+//  This function will send any data nodes in RAM to a connected Xbee.
+//  The nodes are unchanged in the process and remain in RAM.
 //
 // Call FRQ:
-//  Completely TBD based on what the VTM is
-void interface_with_vtm()
+//  Arbitrarily every 1sec for now
+void transmit_ram_data()
 {
-    // TODO
+	if (logging_status != LOGGING_ACTIVE) return;
+
+    transmit_data();
 }
 
 
