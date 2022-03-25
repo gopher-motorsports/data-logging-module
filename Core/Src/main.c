@@ -253,7 +253,7 @@ static void MX_CAN1_Init(void)
 {
 
   /* USER CODE BEGIN CAN1_Init 0 */
-
+#ifndef DATA_SIM_MODE
   /* USER CODE END CAN1_Init 0 */
 
   /* USER CODE BEGIN CAN1_Init 1 */
@@ -276,7 +276,7 @@ static void MX_CAN1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN CAN1_Init 2 */
-
+#endif
   /* USER CODE END CAN1_Init 2 */
 
 }
@@ -290,7 +290,7 @@ static void MX_CAN2_Init(void)
 {
 
   /* USER CODE BEGIN CAN2_Init 0 */
-
+#ifndef DATA_SIM_MODE
   /* USER CODE END CAN2_Init 0 */
 
   /* USER CODE BEGIN CAN2_Init 1 */
@@ -313,7 +313,7 @@ static void MX_CAN2_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN CAN2_Init 2 */
-
+#endif
   /* USER CODE END CAN2_Init 2 */
 
 }
@@ -327,7 +327,7 @@ static void MX_CAN3_Init(void)
 {
 
   /* USER CODE BEGIN CAN3_Init 0 */
-
+#ifndef DATA_SIM_MODE
   /* USER CODE END CAN3_Init 0 */
 
   /* USER CODE BEGIN CAN3_Init 1 */
@@ -350,7 +350,7 @@ static void MX_CAN3_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN CAN3_Init 2 */
-
+#endif
   /* USER CODE END CAN3_Init 2 */
 
 }

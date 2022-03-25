@@ -9,6 +9,9 @@
 // Defines
 #define TESTER_FILE_NAME "/dlm_data.gdat"
 
+// uncomment for sim mode
+#define DATA_SIM_MODE
+
 
 // Function prototypes
 void dlm_init();
