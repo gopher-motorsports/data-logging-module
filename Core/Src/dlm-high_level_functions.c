@@ -51,9 +51,6 @@ LOGGING_STATUS logging_status = NOT_LOGGING;
 #include "main.h"
 static void change_led_state(U8 sender, void* parameter, U8 remote_param, U8 UNUSED1, U8 UNUSED2, U8 UNUSED3);
 
-// uncomment for sim mode
-#define DATA_SIM_MODE
-
 // dlm_init
 //  This function will handle power-on behavior, all completely TBD
 //  according to everything else the module does
@@ -68,7 +65,6 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2,
 	// initialize CAN
 	// NOTE: CAN will also need to be added in CubeMX and code must be generated
 	// Check the STM_CAN repo for the file "Fxxx CAN Config Settings.pptx" for the correct settings
-#ifndef DATA_SIM_MODE
 	if (init_can(dlm_hcan1, DLM_ID, BXTYPE_MASTER)
 			|| init_can(dlm_hcan2, DLM_ID, BXTYPE_SLAVE)
 			|| init_can(dlm_hcan3, DLM_ID, BXTYPE_MASTER))
@@ -84,7 +80,6 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2,
 
 	// enable the tester variables
 	set_all_params_state(TRUE);
-#endif
 
 	// use the RTC to generate the filename
 	generate_filename(dlm_file_name);

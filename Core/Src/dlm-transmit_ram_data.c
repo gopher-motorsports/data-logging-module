@@ -19,7 +19,7 @@ void transmit_ram_data_init(DATA_INFO_NODE* ram_ptr) {
 	ram_data_head = ram_ptr;
 }
 
-void transmit_data() {
+void transmit_data(UART_HandleTypeDef* uart) {
 	static DATA_INFO_NODE* prevTransmission = NULL;
 	U8 packet[32];
 	DATA_INFO_NODE* node = ram_data_head->next;
@@ -44,7 +44,7 @@ void transmit_data() {
 //		U8 xbFull = HAL_GPIO_ReadPin(NCTS_GPIO_Port, NCTS_Pin);
 		U8 xbFull = 0;
 		if (!xbFull) {
-//			HAL_UART_Transmit(&huart2, packet, packetLength, HAL_MAX_DELAY);
+			HAL_UART_Transmit(uart, packet, packetLength, HAL_MAX_DELAY);
 		}
 	}
 
