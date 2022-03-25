@@ -76,7 +76,7 @@ U8 packetize_node(DATA_INFO_NODE* node, U8 packet[]) {
     DPF_CONVERTER data_union;
 	data_union.d = convert_data_to_dpf(node);
     for (i = sizeof(data_union.u64); i > 0; i--) {
-        bytes = (U8*) (data_union.u64);
+        bytes = (U8*) &(data_union.u64);
         packetLength = append_byte(packet, packetLength, bytes[i - 1]);
     }
 
