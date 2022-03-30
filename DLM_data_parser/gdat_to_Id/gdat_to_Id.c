@@ -8,11 +8,16 @@
 #include "gdat_to_Id.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 
 // define everything that is neede in static memory
 START_OF_FILE_t sof_data = {0};
 FILE_METADATA_t file_data = {0};
+
+const char edl_ver_string[] = EDL_VERSION_STRING;
+const char magic_string[] = MAGIC_STRING;
+
 
 // the head node WILL NOT be written in memory so it do not count it
 CHANNEL_DESC_LL_NODE_t channel_head = 
@@ -47,11 +52,12 @@ int main(int argc, char** argv)
     // DEBUG add a couple of data points for testing
     // Doing 100 data points at 10 Hz
     U32 buf[100];
-    add_channel_to_list(100, buf, 10, 0, 1, 1, 0, "tester variable", "test", "unit");
+    for (int c = 0; c < 100; c++) buf[c] = c;
+    add_channel_to_list(&channel_head, 100, buf, 10, 0, 1, 1, 0, "tester variable", "test", "unit");
 
     // Run the "linker". This will fill out correct file space for all of the different
     // blocks of data and makes sure they will be correctly pointed to in the file
-    // TODO
+    link_id_file(&sof_data, &file_data, &channel_head);
 
     // Open a new file with the correct name and begin writing all of the data to it.
     // Layout the file as planned after the linker was run
@@ -62,7 +68,7 @@ int main(int argc, char** argv)
 // add_channel_to_list
 //  Add a new channel to the list of channels. Send in all of the information for this
 //  node
-S8 add_channel_to_list(U32 num_data_points, U32* buffer, U16 log_fq_Hz,
+S8 add_channel_to_list(CHANNEL_DESC_LL_NODE_t* chan_head, U32 num_data_points, U32* buffer, U16 log_fq_Hz,
                        S16 offset, S16 scaler, S16 divisor, S16 b10_shift,
                        const char* name, const char* name_short, const char* unit)
 {
@@ -72,8 +78,8 @@ S8 add_channel_to_list(U32 num_data_points, U32* buffer, U16 log_fq_Hz,
     // pointers accordingly
     new_chan = (CHANNEL_DESC_LL_NODE_t*)malloc(sizeof(CHANNEL_DESC_LL_NODE_t));
     if (!new_chan) return -1;
-    new_chan->next = channel_head.next;
-    new_chan->prev = &channel_head;
+    new_chan->next = chan_head->next;
+    new_chan->prev = chan_head;
     if (new_chan->next) new_chan->next->prev = new_chan;
 
     // assign the things that can be just copied
@@ -82,8 +88,11 @@ S8 add_channel_to_list(U32 num_data_points, U32* buffer, U16 log_fq_Hz,
     new_chan->channel_desc.logging_freq_hz = log_fq_Hz;
     new_chan->channel_desc.data_offset = offset;
     new_chan->channel_desc.data_scaler = scaler;
-    new_chan->channel_desc.data_divisor = divisor
-    new_chan->channel_desc.data_b10_shift = b10_shift;
+    new_chan->channel_desc.data_divisor = divisor;
+    new_chan->channel_desc.data_base10_shift = b10_shift;
+
+    // always do 32bit for now
+    new_chan->channel_desc.data_size = s32_data;
 
     // for the strings, assign up to the null char or the maximum length of
     // the string, whichever comed first (strncpy)
@@ -95,27 +104,86 @@ S8 add_channel_to_list(U32 num_data_points, U32* buffer, U16 log_fq_Hz,
 }
 
 
-S8 init_sof_block(START_OF_FILE_t* sof, U16 year, U8 month, U8 dat, U8 hour, U8 minute, U8 second,
+S8 init_sof_block(START_OF_FILE_t* sof, U16 year, U8 month, U8 day, U8 hour, U8 minute, U8 second,
                   const char* session, const char* short_comment, const char* team_name)
 {
+    char date_str[sizeof(sof->date) + 1];
+    char time_str[sizeof(sof->time) + 1];
+
     // fill in the things that dont change
     sof->version_string_fptr = EDL_VER_STR_FLOC;
     sof->dash_version_string_fptr = 0x0;
-    strncpy(sof->edl_version_string, EDL_VERSION_STRING, sizeof(sof->edl_version_string));
-    strncpy(sof->magic_str, MAGIC_STRING, sizeof(sof->magic_str));
+    strncpy(sof->edl_version_string, edl_ver_string, sizeof(sof->edl_version_string));
+    strncpy(sof->magic_str, magic_string, sizeof(sof->magic_str));
 
     // fill in the time and data with sprintfs. Make sure to keep the lengths correct
-    // TODO
+    sprintf(time_str, "%02d:%02d:%02d", hour, minute, second);
+    sprintf(date_str, "%02d/%02d/%04d", day, month, year);
+    strncpy(sof->time, time_str, sizeof(sof->time));
+    strncpy(sof->date, date_str, sizeof(sof->date));
 
     // fill in the strings
     strncpy(sof->session_str, session, sizeof(sof->session_str));
     strncpy(sof->short_comment_str, session, sizeof(sof->short_comment_str));
     strncpy(sof->team_name_str, session, sizeof(sof->team_name_str));
+
+    return 0;
 }
 
 
-S8 init_metadata_block(const char* event_name, const char* session, const char* long_comment,
-                       const char* location)
+S8 init_metadata_block(FILE_METADATA_t* metadat, const char* event_name, const char* session,
+                       const char* long_comment, const char* location)
 {
-    // TODO lots of strncpy
+    strncpy(metadat->event_name_str, event_name, sizeof(metadat->event_name_str));
+    strncpy(metadat->session_str, session, sizeof(metadat->session_str));
+    strncpy(metadat->long_comment_str, long_comment, sizeof(metadat->long_comment_str));
+    strncpy(metadat->location_str, location, sizeof(metadat->location_str));
+}
+
+
+// link_id_file
+//  Decide the locations of all of the different parts of the file and fill in the correct
+//  fptrs. There will be lots of #defines for starts of blocks for things that can be anywhere 
+S8 link_id_file(START_OF_FILE_t* sof, FILE_METADATA_t* metadat, CHANNEL_DESC_LL_NODE_t* chan_head)
+{
+    U32 num_channels = 0;
+    U32 curr_file_loc = 0;
+    CHANNEL_DESC_LL_NODE_t* chan_ptr = chan_head->next;
+
+    // put the arbitrary things where they are #defined to be
+    sof->version_string_fptr = EDL_VER_STR_FLOC;
+    sof->dash_version_string_fptr = 0x00; // this does not seem to be needed
+    sof->channel_ll_first_fptr = CHANNEL_DESC_START_FLOC; // there needs to be at least one channel
+    sof->file_metadata_block_fptr = FILE_METADATA_FLOC;
+
+    // the first data point will be directly after the channels
+    while (chan_ptr != NULL)
+    {
+        num_channels++;
+        chan_ptr++;
+    }
+    sof->data_start_fptr = CHANNEL_DESC_START_FLOC + (num_channels * CHANNEL_DESC_SIZE);
+
+    // set the location pointer for the location string. It will be direcly after the file metadata
+    // struct
+    metadat->location_fptr = FILE_METADATA_FLOC + FILE_METADATA_SIZE - sizeof(metadat->location_str);
+
+    // for each of the channels, fill in the pointers to previous and next
+    chan_ptr = chan_head->next;
+    while (chan_ptr != NULL)
+    {
+        // TODO
+    }
+
+    // at the end of the channels, start putting the data buffers and add the location to the channel
+    // TODO
+}
+
+
+// write_id_file
+//  take the parts of the files and write them. Be sure to look at the fptrs in the data
+//  to put everything where it belongs in the file
+S8 write_id_file(START_OF_FILE_t* sof, FILE_METADATA_t* metadat, CHANNEL_DESC_LL_NODE_t* chan_head)
+{
+    // TODO
 }

@@ -124,3 +124,16 @@ struct CHANNEL_DESC_LL_NODE_t
 };
 
 
+
+
+// function prototypes
+
+S8 add_channel_to_list(CHANNEL_DESC_LL_NODE_t* chan_head, U32 num_data_points, U32* buffer, U16 log_fq_Hz,
+                       S16 offset, S16 scaler, S16 divisor, S16 b10_shift,
+                       const char* name, const char* name_short, const char* unit);
+S8 init_sof_block(START_OF_FILE_t* sof, U16 year, U8 month, U8 day, U8 hour, U8 minute, U8 second,
+                  const char* session, const char* short_comment, const char* team_name);
+S8 init_metadata_block(FILE_METADATA_t* metadat, const char* event_name, const char* session,
+                       const char* long_comment, const char* location);
+S8 link_id_file(START_OF_FILE_t* sof, FILE_METADATA_t* metadat, CHANNEL_DESC_LL_NODE_t* chan_head);
+S8 write_id_file(START_OF_FILE_t* sof, FILE_METADATA_t* metadat, CHANNEL_DESC_LL_NODE_t* chan_head);
