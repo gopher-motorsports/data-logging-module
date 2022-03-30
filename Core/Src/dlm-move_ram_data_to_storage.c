@@ -162,6 +162,7 @@ S8 write_data_to_storage()
     	release_mutex(&ram_data_mutex);
 
         // append the file with this new string
+    	// TODO change this to append a buffer, then write the whole buffer at once
         if ((fresult = f_write(&SDFile, data_point_str, DATA_POINT_STORAGE_SIZE, (UINT*)(&bytes_written))) != FR_OK)
         {
         	file_error_code = fresult;
@@ -170,6 +171,7 @@ S8 write_data_to_storage()
     }
 
     // sync the file. this replaces opening and closing the file
+    // TODO replace this with one write. Let it sync on its own time
     fresult = f_sync(&SDFile);
 
     if (fresult != FR_OK)
