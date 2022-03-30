@@ -136,4 +136,5 @@ S8 init_sof_block(START_OF_FILE_t* sof, U16 year, U8 month, U8 day, U8 hour, U8 
 S8 init_metadata_block(FILE_METADATA_t* metadat, const char* event_name, const char* session,
                        const char* long_comment, const char* location);
 S8 link_id_file(START_OF_FILE_t* sof, FILE_METADATA_t* metadat, CHANNEL_DESC_LL_NODE_t* chan_head);
-S8 write_id_file(START_OF_FILE_t* sof, FILE_METADATA_t* metadat, CHANNEL_DESC_LL_NODE_t* chan_head);
+S8 write_id_file(START_OF_FILE_t* sof, FILE_METADATA_t* metadat, CHANNEL_DESC_LL_NODE_t* chan_head,
+                 const char* filename);
