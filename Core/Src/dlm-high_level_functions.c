@@ -25,6 +25,7 @@
 #include "dlm-move_ram_data_to_storage.h"
 #include "dlm-manage_logging_session.h"
 #include "dlm-transmit_ram_data.h"
+#include "dlm-sim.h"
 
 
 // Global Variables
@@ -65,6 +66,7 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2,
 	// initialize CAN
 	// NOTE: CAN will also need to be added in CubeMX and code must be generated
 	// Check the STM_CAN repo for the file "Fxxx CAN Config Settings.pptx" for the correct settings
+#ifndef DATA_SIM_MODE
 	if (init_can(dlm_hcan1, DLM_ID, BXTYPE_MASTER)
 			|| init_can(dlm_hcan2, DLM_ID, BXTYPE_SLAVE)
 			|| init_can(dlm_hcan3, DLM_ID, BXTYPE_MASTER))
@@ -72,6 +74,7 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2,
 		// an error has occurred, stay here TODO error handling
 		while (1);
 	}
+#endif
 
 	// Declare which bus is which using define_can_bus
 	define_can_bus(dlm_hcan1, GCAN0, 0);
@@ -91,7 +94,7 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2,
     transmit_ram_data_init(&ram_data);
 
 #ifdef DATA_SIM_MODE
-    // TODO init for the data sim mode
+    sim_init(&ram_data);
 #endif
 
     // in REV1 we will start the logging session right away
@@ -128,7 +131,7 @@ void manage_data_aquisition()
     request_all_buckets();
     store_new_data();
 #else
-    // TODO data sim generation
+    sim_generate_data();
 #endif
 }
 
@@ -157,7 +160,8 @@ void move_ram_data_to_storage()
 #ifndef DATA_SIM_MODE
 	write_data_and_handle_errors();
 #else
-	// TODO just delete the nodes from memory
+	sim_clear_ram();
+	osDelay(10000);
 #endif
 }
 
