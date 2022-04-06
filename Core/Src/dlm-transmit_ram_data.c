@@ -6,7 +6,7 @@
  */
 
 #include "cmsis_os.h"
-
+#include "main.h"
 #include "dlm-transmit_ram_data.h"
 #include "dlm-move_ram_data_to_storage.h"
 #include "dlm-storage_structs.h"
@@ -41,8 +41,7 @@ void transmit_data(UART_HandleTypeDef* uart) {
 		release_mutex(&ram_data_mutex);
 
 		// if the xbee buffer has space, send packet
-//		U8 xbFull = HAL_GPIO_ReadPin(NCTS_GPIO_Port, NCTS_Pin);
-		U8 xbFull = 0;
+		U8 xbFull = HAL_GPIO_ReadPin(XB_NCTS_GPIO_Port, XB_NCTS_Pin);
 		if (!xbFull) {
 			HAL_UART_Transmit(uart, packet, packetLength, HAL_MAX_DELAY);
 		}

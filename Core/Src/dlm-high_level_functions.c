@@ -17,6 +17,7 @@
 
 
 // self include
+#include "cmsis_os.h"
 #include "dlm-high_level_functions.h"
 #include "base_types.h"
 #include "GopherCAN.h"
