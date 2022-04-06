@@ -17,7 +17,6 @@ void move_ram_data_to_storage_init(DATA_INFO_NODE* storage_ptr, const char* file
 S8 write_data_and_handle_errors();
 S8 write_data_to_storage();
 void build_data_string(U8* data_str, DATA_INFO_NODE* data_node);
-double convert_data_to_dpf(DATA_INFO_NODE* data_node);
 S8 mount_sd_card();
 S8 create_new_file(const char* filename);
 
