@@ -555,6 +555,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(SD_Detected_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : XB_NCTS_Pin */
+  GPIO_InitStruct.Pin = XB_NCTS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(XB_NCTS_GPIO_Port, &GPIO_InitStruct);
+
 }
 
 /* USER CODE BEGIN 4 */
