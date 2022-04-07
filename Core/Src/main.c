@@ -21,11 +21,10 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "fatfs.h"
-#include "freertos.h"
-#include "dlm-high_level_functions.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "dlm-high_level_functions.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -53,9 +52,12 @@ SD_HandleTypeDef hsd1;
 DMA_HandleTypeDef hdma_sdmmc1_tx;
 DMA_HandleTypeDef hdma_sdmmc1_rx;
 
+UART_HandleTypeDef huart7;
+
 osThreadId can_loop_taskHandle;
 osThreadId dlm_manage_dataHandle;
 osThreadId move_ram_to_sd_Handle;
+osThreadId transmit_ram_Handle;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -69,9 +71,11 @@ static void MX_CAN2_Init(void);
 static void MX_SDMMC1_SD_Init(void);
 static void MX_RTC_Init(void);
 static void MX_CAN3_Init(void);
+static void MX_UART7_Init(void);
 void can_loop(void const * argument);
 void dlm_main(void const * argument);
 void move_ram_to_sd(void const * argument);
+void transmit_ram(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -113,10 +117,11 @@ int main(void)
   MX_DMA_Init();
   MX_CAN1_Init();
   MX_CAN2_Init();
-  MX_CAN3_Init();
   MX_SDMMC1_SD_Init();
   MX_FATFS_Init();
   MX_RTC_Init();
+  MX_CAN3_Init();
+  MX_UART7_Init();
   /* USER CODE BEGIN 2 */
 
   dlm_init(&hcan1, &hcan2, &hcan3);
@@ -151,6 +156,10 @@ int main(void)
   /* definition and creation of move_ram_to_sd_ */
   osThreadDef(move_ram_to_sd_, move_ram_to_sd, osPriorityNormal, 0, 2048);
   move_ram_to_sd_Handle = osThreadCreate(osThread(move_ram_to_sd_), NULL);
+
+  /* definition and creation of transmit_ram_ */
+  osThreadDef(transmit_ram_, transmit_ram, osPriorityNormal, 0, 2048);
+  transmit_ram_Handle = osThreadCreate(osThread(transmit_ram_), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -223,9 +232,10 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RTC|RCC_PERIPHCLK_SDMMC1
-                              |RCC_PERIPHCLK_CLK48;
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RTC|RCC_PERIPHCLK_UART7
+                              |RCC_PERIPHCLK_SDMMC1|RCC_PERIPHCLK_CLK48;
   PeriphClkInitStruct.RTCClockSelection = RCC_RTCCLKSOURCE_LSI;
+  PeriphClkInitStruct.Uart7ClockSelection = RCC_UART7CLKSOURCE_PCLK1;
   PeriphClkInitStruct.Clk48ClockSelection = RCC_CLK48SOURCE_PLL;
   PeriphClkInitStruct.Sdmmc1ClockSelection = RCC_SDMMC1CLKSOURCE_CLK48;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
@@ -243,7 +253,7 @@ static void MX_CAN1_Init(void)
 {
 
   /* USER CODE BEGIN CAN1_Init 0 */
-
+#ifndef DATA_SIM_MODE
   /* USER CODE END CAN1_Init 0 */
 
   /* USER CODE BEGIN CAN1_Init 1 */
@@ -266,7 +276,7 @@ static void MX_CAN1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN CAN1_Init 2 */
-
+#endif
   /* USER CODE END CAN1_Init 2 */
 
 }
@@ -280,7 +290,7 @@ static void MX_CAN2_Init(void)
 {
 
   /* USER CODE BEGIN CAN2_Init 0 */
-
+#ifndef DATA_SIM_MODE
   /* USER CODE END CAN2_Init 0 */
 
   /* USER CODE BEGIN CAN2_Init 1 */
@@ -303,7 +313,7 @@ static void MX_CAN2_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN CAN2_Init 2 */
-
+#endif
   /* USER CODE END CAN2_Init 2 */
 
 }
@@ -317,7 +327,7 @@ static void MX_CAN3_Init(void)
 {
 
   /* USER CODE BEGIN CAN3_Init 0 */
-
+#ifndef DATA_SIM_MODE
   /* USER CODE END CAN3_Init 0 */
 
   /* USER CODE BEGIN CAN3_Init 1 */
@@ -340,7 +350,7 @@ static void MX_CAN3_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN CAN3_Init 2 */
-
+#endif
   /* USER CODE END CAN3_Init 2 */
 
 }
@@ -459,6 +469,41 @@ static void MX_SDMMC1_SD_Init(void)
 }
 
 /**
+  * @brief UART7 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_UART7_Init(void)
+{
+
+  /* USER CODE BEGIN UART7_Init 0 */
+
+  /* USER CODE END UART7_Init 0 */
+
+  /* USER CODE BEGIN UART7_Init 1 */
+
+  /* USER CODE END UART7_Init 1 */
+  huart7.Instance = UART7;
+  huart7.Init.BaudRate = 9600;
+  huart7.Init.WordLength = UART_WORDLENGTH_8B;
+  huart7.Init.StopBits = UART_STOPBITS_1;
+  huart7.Init.Parity = UART_PARITY_NONE;
+  huart7.Init.Mode = UART_MODE_TX_RX;
+  huart7.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart7.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart7.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart7.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart7) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN UART7_Init 2 */
+
+  /* USER CODE END UART7_Init 2 */
+
+}
+
+/**
   * Enable DMA controller clock
   */
 static void MX_DMA_Init(void)
@@ -488,6 +533,7 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOG_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
@@ -508,6 +554,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(SD_Detected_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : XB_NCTS_Pin */
+  GPIO_InitStruct.Pin = XB_NCTS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(XB_NCTS_GPIO_Port, &GPIO_InitStruct);
 
 }
 
@@ -570,6 +622,25 @@ void move_ram_to_sd(void const * argument)
 	  move_ram_data_to_storage();
   }
   /* USER CODE END move_ram_to_sd */
+}
+
+/* USER CODE BEGIN Header_transmit_ram */
+/**
+* @brief Function implementing the transmit_ram_ thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_transmit_ram */
+void transmit_ram(void const * argument)
+{
+  /* USER CODE BEGIN transmit_ram */
+  /* Infinite loop */
+  for(;;)
+  {
+	  osDelay(2000);
+	  transmit_ram_data();
+  }
+  /* USER CODE END transmit_ram */
 }
 
  /**

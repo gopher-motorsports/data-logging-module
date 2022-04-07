@@ -9,12 +9,15 @@
 // Defines
 #define TESTER_FILE_NAME "/dlm_data.gdat"
 
+// uncomment for sim mode
+#define DATA_SIM_MODE
+
 
 // Function prototypes
 void dlm_init();
 void manage_data_aquisition();
 void move_ram_data_to_storage();
-void interface_with_vtm();
+void transmit_ram_data();
 void begin_logging_session();
 void end_logging_session();
 void offload_data();

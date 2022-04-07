@@ -17,6 +17,7 @@
 
 
 // self include
+#include "cmsis_os.h"
 #include "dlm-high_level_functions.h"
 #include "base_types.h"
 #include "GopherCAN.h"
@@ -24,6 +25,8 @@
 #include "dlm-manage_data_aquisition.h"
 #include "dlm-move_ram_data_to_storage.h"
 #include "dlm-manage_logging_session.h"
+#include "dlm-transmit_ram_data.h"
+#include "dlm-sim.h"
 
 
 // Global Variables
@@ -64,13 +67,15 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2,
 	// initialize CAN
 	// NOTE: CAN will also need to be added in CubeMX and code must be generated
 	// Check the STM_CAN repo for the file "Fxxx CAN Config Settings.pptx" for the correct settings
+#ifndef DATA_SIM_MODE
 	if (init_can(dlm_hcan1, DLM_ID, BXTYPE_MASTER)
 			|| init_can(dlm_hcan2, DLM_ID, BXTYPE_SLAVE)
 			|| init_can(dlm_hcan3, DLM_ID, BXTYPE_MASTER))
 	{
-		// an error has occurred, stay here
+		// an error has occurred, stay here TODO error handling
 		while (1);
 	}
+#endif
 
 	// Declare which bus is which using define_can_bus
 	define_can_bus(dlm_hcan1, GCAN0, 0);
@@ -87,6 +92,11 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2,
 	manage_logging_session_init(dlm_file_name);
     manage_data_aquisition_init(&ram_data);
     move_ram_data_to_storage_init(&ram_data, dlm_file_name);
+    transmit_ram_data_init(&ram_data);
+
+#ifdef DATA_SIM_MODE
+    sim_init(&ram_data);
+#endif
 
     // in REV1 we will start the logging session right away
     begin_logging_session();
@@ -118,8 +128,12 @@ void manage_data_aquisition()
 		return;
 	}
 
+#ifndef DATA_SIM_MODE
     request_all_buckets();
     store_new_data();
+#else
+    sim_generate_data();
+#endif
 }
 
 
@@ -144,20 +158,26 @@ void move_ram_data_to_storage()
 
     // TODO Use some logic to determine when the best time is to write to storage. Right
 	// now it just writes every 2 seconds
+#ifndef DATA_SIM_MODE
 	write_data_and_handle_errors();
+#else
+	sim_clear_ram();
+	osDelay(10000);
+#endif
 }
 
 
-// interface_with_vtm
-//  This function will handle sending the appropriate data to the VTM 
-//  over some interface. How much data is sent and how the data is sent
-//  is still TBD depending on the on-car telemety hardware
+// transmit_ram_data
+//  This function will send any data nodes in RAM to a connected Xbee.
+//  The nodes are unchanged in the process and remain in RAM.
 //
 // Call FRQ:
-//  Completely TBD based on what the VTM is
-void interface_with_vtm()
+//  Arbitrarily every 1sec for now
+void transmit_ram_data()
 {
-    // TODO
+	if (logging_status != LOGGING_ACTIVE) return;
+
+    transmit_data(&huart7);
 }
 
 
