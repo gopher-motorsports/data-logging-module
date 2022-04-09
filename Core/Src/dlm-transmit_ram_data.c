@@ -11,6 +11,7 @@
 #include "dlm-move_ram_data_to_storage.h"
 #include "dlm-storage_structs.h"
 #include "dlm-mutex.h"
+#include "dlm-util.h"
 #include "GopherCAN.h"
 
 DATA_INFO_NODE* ram_data_head;
