@@ -21,6 +21,7 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "fatfs.h"
+#include "lwip.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -54,10 +55,11 @@ DMA_HandleTypeDef hdma_sdmmc1_rx;
 
 UART_HandleTypeDef huart7;
 
-osThreadId can_loop_taskHandle;
+osThreadId udp_cli_taskHandle;
 osThreadId dlm_manage_dataHandle;
 osThreadId move_ram_to_sd_Handle;
 osThreadId transmit_ram_Handle;
+osThreadId can_loop_taskHandle;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -72,10 +74,11 @@ static void MX_SDMMC1_SD_Init(void);
 static void MX_RTC_Init(void);
 static void MX_CAN3_Init(void);
 static void MX_UART7_Init(void);
-void can_loop(void const * argument);
+void TASK_cli(void const * argument);
 void dlm_main(void const * argument);
 void move_ram_to_sd(void const * argument);
 void transmit_ram(void const * argument);
+void can_loop(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -145,21 +148,25 @@ int main(void)
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* definition and creation of can_loop_task */
-  osThreadDef(can_loop_task, can_loop, osPriorityHigh, 0, 1024);
-  can_loop_taskHandle = osThreadCreate(osThread(can_loop_task), NULL);
+  /* definition and creation of udp_cli_task */
+  osThreadDef(udp_cli_task, TASK_cli, osPriorityLow, 0, 1024);
+  udp_cli_taskHandle = osThreadCreate(osThread(udp_cli_task), NULL);
 
   /* definition and creation of dlm_manage_data */
   osThreadDef(dlm_manage_data, dlm_main, osPriorityNormal, 0, 1024);
   dlm_manage_dataHandle = osThreadCreate(osThread(dlm_manage_data), NULL);
 
   /* definition and creation of move_ram_to_sd_ */
-  osThreadDef(move_ram_to_sd_, move_ram_to_sd, osPriorityNormal, 0, 2048);
+  osThreadDef(move_ram_to_sd_, move_ram_to_sd, osPriorityAboveNormal, 0, 2048);
   move_ram_to_sd_Handle = osThreadCreate(osThread(move_ram_to_sd_), NULL);
 
   /* definition and creation of transmit_ram_ */
-  osThreadDef(transmit_ram_, transmit_ram, osPriorityNormal, 0, 2048);
+  osThreadDef(transmit_ram_, transmit_ram, osPriorityBelowNormal, 0, 2048);
   transmit_ram_Handle = osThreadCreate(osThread(transmit_ram_), NULL);
+
+  /* definition and creation of can_loop_task */
+  osThreadDef(can_loop_task, can_loop, osPriorityHigh, 0, 1024);
+  can_loop_taskHandle = osThreadCreate(osThread(can_loop_task), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -364,7 +371,7 @@ static void MX_RTC_Init(void)
 {
 
   /* USER CODE BEGIN RTC_Init 0 */
-	// TODO part of the bad solution
+	// part of the bad solution
 	RTC_TimeTypeDef old_time = {0};
 	RTC_DateTypeDef old_date = {0};
 
@@ -392,7 +399,7 @@ static void MX_RTC_Init(void)
 
   /* USER CODE BEGIN Check_RTC_BKUP */
 
-  // TODO this is a dumb solution to the problem of the auto-gen code resetting the time and
+  // this is a dumb solution to the problem of the auto-gen code resetting the time and
   // date on every MCU reset
 
   // get the time and date stored before reseting
@@ -424,7 +431,7 @@ static void MX_RTC_Init(void)
   }
   /* USER CODE BEGIN RTC_Init 2 */
 
-  // TODO part of the bad solution
+  // part of the bad solution
 
   // put the old time and date back to what it used to be
   if (HAL_RTC_SetTime(&hrtc, &old_time, RTC_FORMAT_BIN) != HAL_OK)
@@ -532,11 +539,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOG_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
@@ -552,7 +559,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin : SD_Detected_Pin */
   GPIO_InitStruct.Pin = SD_Detected_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(SD_Detected_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : XB_NCTS_Pin */
@@ -567,21 +574,37 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE END 4 */
 
-/* USER CODE BEGIN Header_can_loop */
+/* USER CODE BEGIN Header_TASK_cli */
 /**
-  * @brief  Function implementing the can_loop_task thread.
-  * @param  argument: Not used
-  * @retval None
-  */
-/* USER CODE END Header_can_loop */
-void can_loop(void const * argument)
+* @brief Function implementing the udp_cli_task thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_TASK_cli */
+void TASK_cli(void const * argument)
 {
+  /* init code for LWIP */
+  MX_LWIP_Init();
   /* USER CODE BEGIN 5 */
+
+  // NOTE:
+  // MX_LWIP_Init() needs to be modified to never give up trying to
+  // connect to ethernet. To do this, a few lines need to be added to
+  // the file "/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_eth.c"
+  // every time the code is re-generated.
+  //
+  // add the include at the top of the file:
+  //	#include "cmsis_os.h"
+  //
+  // add code to ignore the timeout condition in the function "HAL_ETH_Init()"
+  // on line 349, in the loop that calls "HAL_ETH_ReadPHYRegister(heth, PHY_BSR, &phyreg)":
+  //	osDelay(1);
+  //	continue;
+
   /* Infinite loop */
   for(;;)
   {
-	  can_service_loop();
-    osDelay(1);
+	  eth_udp_cli();
   }
   /* USER CODE END 5 */
 }
@@ -600,7 +623,6 @@ void dlm_main(void const * argument)
   for(;;)
   {
 	  manage_data_aquisition();
-    osDelay(1);
   }
   /* USER CODE END dlm_main */
 }
@@ -618,7 +640,6 @@ void move_ram_to_sd(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  osDelay(2000);
 	  move_ram_data_to_storage();
   }
   /* USER CODE END move_ram_to_sd */
@@ -637,10 +658,28 @@ void transmit_ram(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  osDelay(2000);
 	  transmit_ram_data();
   }
   /* USER CODE END transmit_ram */
+}
+
+/* USER CODE BEGIN Header_can_loop */
+/**
+  * @brief  Function implementing the can_loop_task thread.
+  * @param  argument: Not used
+  * @retval None
+  */
+/* USER CODE END Header_can_loop */
+void can_loop(void const * argument)
+{
+  /* USER CODE BEGIN can_loop */
+  /* Infinite loop */
+  for(;;)
+  {
+	  can_service_loop();
+    osDelay(1);
+  }
+  /* USER CODE END can_loop */
 }
 
  /**

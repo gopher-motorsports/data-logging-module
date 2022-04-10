@@ -9,8 +9,9 @@
 // Defines
 #define TESTER_FILE_NAME "/dlm_data.gdat"
 
-// uncomment for sim mode
-//#define DATA_SIM_MODE
+// uncomment both for sim mode
+#define SIMULATE_DATA_COLLECTION // this will simulate getting data from a DAM, putting it in the data buffer
+//#define AUTO_CLEAR_DATA // this will simulate writing to an SD card, removing data from the data buffer
 
 
 // Function prototypes
@@ -20,8 +21,7 @@ void move_ram_data_to_storage();
 void transmit_ram_data();
 void begin_logging_session();
 void end_logging_session();
-void offload_data();
-void control_vehicle_systems();
+void eth_udp_cli();
 void can_service_loop();
 
 

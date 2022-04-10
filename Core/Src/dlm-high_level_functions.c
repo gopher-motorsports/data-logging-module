@@ -27,6 +27,7 @@
 #include "dlm-manage_logging_session.h"
 #include "dlm-transmit_ram_data.h"
 #include "dlm-sim.h"
+#include "dlm-handle_udp_cli.h"
 
 
 // Global Variables
@@ -67,7 +68,7 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2,
 	// initialize CAN
 	// NOTE: CAN will also need to be added in CubeMX and code must be generated
 	// Check the STM_CAN repo for the file "Fxxx CAN Config Settings.pptx" for the correct settings
-#ifndef DATA_SIM_MODE
+#ifndef SIMULATE_DATA_COLLECTION
 	if (init_can(dlm_hcan1, DLM_ID, BXTYPE_MASTER)
 			|| init_can(dlm_hcan2, DLM_ID, BXTYPE_SLAVE)
 			|| init_can(dlm_hcan3, DLM_ID, BXTYPE_MASTER))
@@ -94,7 +95,7 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2,
     move_ram_data_to_storage_init(&ram_data, dlm_file_name);
     transmit_ram_data_init(&ram_data);
 
-#ifdef DATA_SIM_MODE
+#ifdef SIMULATE_DATA_COLLECTION
     sim_init(&ram_data);
 #endif
 
@@ -123,17 +124,17 @@ static void change_led_state(U8 sender, void* parameter, U8 remote_param, U8 UNU
 //  request rate the DLM should support.
 void manage_data_aquisition()
 {
-	if (logging_status != LOGGING_ACTIVE)
+	if (logging_status == LOGGING_ACTIVE)
 	{
-		return;
+#ifndef SIMULATE_DATA_COLLECTION
+		request_all_buckets();
+		store_new_data();
+#else
+    	sim_generate_data();
+#endif
 	}
 
-#ifndef DATA_SIM_MODE
-    request_all_buckets();
-    store_new_data();
-#else
-    sim_generate_data();
-#endif
+    osDelay(1);
 }
 
 
@@ -151,19 +152,16 @@ void manage_data_aquisition()
 //   - how many write cycles to the persistent storage we are ok giving up
 void move_ram_data_to_storage()
 {
-	if (logging_status != LOGGING_ACTIVE)
+	if (logging_status == LOGGING_ACTIVE)
 	{
-		return;
-	}
-
-    // TODO Use some logic to determine when the best time is to write to storage. Right
-	// now it just writes every 2 seconds
-#ifndef DATA_SIM_MODE
-	write_data_and_handle_errors();
+#ifndef AUTO_CLEAR_DATA
+		osDelay(25);
+		write_data_and_handle_errors();
 #else
-	sim_clear_ram();
-	osDelay(10000);
+		sim_clear_ram();
+		osDelay(10000);
 #endif
+	}
 }
 
 
@@ -175,9 +173,11 @@ void move_ram_data_to_storage()
 //  Arbitrarily every 1sec for now
 void transmit_ram_data()
 {
+	osDelay(2000);
 	if (logging_status != LOGGING_ACTIVE) return;
 
     transmit_data(&huart7);
+
 }
 
 
@@ -209,31 +209,18 @@ void end_logging_session()
 }
 
 
-// offload_data
-//  This function will take data off of the persistent storage and send it
-//  to a PC in some way (possibly Ethernet). How to begin this process, how
-//  to choose a file to offload, and how to actually accomplish the offloading
-//  is still very TBD
+// eth_udp_cli
+//  This function will handle commands sent in through the UDP socket from
+//  a client computer. Callback functions will be handled in this task in
+//  order to do things like view logging status, control the DLM, and offload
+//  data through the UDP socket.
 //
-// Call FRQ:
-//  When activated, how that will happen is TBD
-void offload_data()
+// Call frequency:
+//  TODO
+void eth_udp_cli()
 {
-    // TODO
-}
-
-
-// control_vehicle_systems
-//  This function will do things (TBD) based on the fault states of other modules
-//  as handled by the GopherCAN fault parameters for each module. Also will look at the
-//  last time the Module returned a CAN request (look at last_rx of the fault parameter)
-//  and possibly send a CAN command to the PDM to tell it to restart that module
-//
-// Call FRQ:
-//  Prob 10ms-50ms, depending on how often we want fault parameters
-void control_vehicle_systems()
-{
-    // TODO
+	handle_udp_cli();
+	osDelay(10);
 }
 
 
@@ -244,7 +231,7 @@ void control_vehicle_systems()
 //  if it has been received
 //
 // Call FRQ:
-//  100us because we can
+//  1ms
 void can_service_loop()
 {
 	// This is needed to account for a case where the RX buffer fills up, as the ISR is only
@@ -266,6 +253,8 @@ void can_service_loop()
 	service_can_tx_hardware(dlm_hcan1);
 	service_can_tx_hardware(dlm_hcan2);
 	service_can_tx_hardware(dlm_hcan3);
+
+	osDelay(1);
 }
 
 
