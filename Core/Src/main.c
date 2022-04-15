@@ -581,7 +581,6 @@ void can_loop(void const * argument)
   for(;;)
   {
 	  can_service_loop();
-    osDelay(1);
   }
   /* USER CODE END 5 */
 }
@@ -600,7 +599,6 @@ void dlm_main(void const * argument)
   for(;;)
   {
 	  manage_data_aquisition();
-    osDelay(1);
   }
   /* USER CODE END dlm_main */
 }
@@ -618,7 +616,6 @@ void move_ram_to_sd(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  osDelay(2000);
 	  move_ram_data_to_storage();
   }
   /* USER CODE END move_ram_to_sd */
@@ -637,7 +634,6 @@ void transmit_ram(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  osDelay(2000);
 	  transmit_ram_data();
   }
   /* USER CODE END transmit_ram */

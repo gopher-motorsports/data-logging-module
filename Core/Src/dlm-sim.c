@@ -12,6 +12,7 @@
 #include "base_types.h"
 #include "dlm-storage_structs.h"
 #include "dlm-mutex.h"
+#include "GopherCAN.h"
 
 DATA_INFO_NODE* ram_data_head;
 
@@ -19,32 +20,59 @@ void sim_init(DATA_INFO_NODE* ram_ptr) {
 	ram_data_head = ram_ptr;
 }
 
-void sim_generate_data() {
+
+// #defines for configuring the frequency at which things are written
+#define DATA_GEN_FREQ_HZ 100
+#define NUM_CHANNELS 24
+#define FIRST_GCAN_ID (dam_chan_1.param_id)
+#define DATA_NODE_TYPE FLOAT_DATA_NODE
+
+#define DATA_GEN_MS_BETWEEN (1000/DATA_GEN_FREQ_HZ)
+
+
+// this function is called every 1ms, so keep that in mind when doing timings
+void sim_generate_data()
+{
     static U32 nodeCount = 0;
+    static U32 time_counter = 0;
+    U32 time = HAL_GetTick();
 
-    // 1/100 chance of generating a node (not actually random bc no seed)
-    if(rand() % 100 != 0) return;
+    // check if it the right time to add data to the buffer
+    if (++time_counter >= DATA_GEN_MS_BETWEEN)
+    {
+    	time_counter = 0;
 
-    // create a data node
-    U8_DATA_NODE* u8_data_node = malloc(sizeof(U8_DATA_NODE));
-    if (u8_data_node == NULL) return;
-    u8_data_node->data = 0x09;
+		// create data for each of the parameters required
+		for (U16 pid = FIRST_GCAN_ID; pid < FIRST_GCAN_ID + NUM_CHANNELS; pid++)
+		{
+			// create a data node.
+			DATA_NODE_TYPE* data_node = malloc(sizeof(DATA_NODE_TYPE));
+			if (data_node == NULL)
+			{
+				// ran out of memory
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
+				return;
+			}
+			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
+			data_node->data = nodeCount; // GCC should handle the implicit cast to whatever data type is required
 
-    DATA_INFO_NODE* node = (DATA_INFO_NODE*)u8_data_node;
-    node->data_time = nodeCount;
-	node->param = 0x0001;
+			DATA_INFO_NODE* node = (DATA_INFO_NODE*)data_node;
+			node->data_time = time;
+			node->param = pid;
 
-	// add the new node to the front of the list, after the head node
-	while (!get_mutex_lock(&ram_data_mutex)) osDelay(1);
-	taskENTER_CRITICAL();
+			// add the new node to the front of the list, after the head node
+			while (!get_mutex_lock(&ram_data_mutex)) osDelay(1);
+			taskENTER_CRITICAL();
 
-	node->next = ram_data_head->next;
-	ram_data_head->next = node;
+			node->next = ram_data_head->next;
+			ram_data_head->next = node;
 
-	taskEXIT_CRITICAL();
-	release_mutex(&ram_data_mutex);
+			taskEXIT_CRITICAL();
+			release_mutex(&ram_data_mutex);
+		}
 
-	nodeCount++;
+		nodeCount++;
+    }
 }
 
 void sim_clear_ram() {
