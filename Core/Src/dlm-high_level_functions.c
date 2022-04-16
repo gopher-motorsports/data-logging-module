@@ -67,7 +67,7 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2,
 	// initialize CAN
 	// NOTE: CAN will also need to be added in CubeMX and code must be generated
 	// Check the STM_CAN repo for the file "Fxxx CAN Config Settings.pptx" for the correct settings
-#ifndef DATA_SIM_MODE
+#ifndef SIMULATE_DATA_COLLECTION
 	if (init_can(dlm_hcan1, DLM_ID, BXTYPE_MASTER)
 			|| init_can(dlm_hcan2, DLM_ID, BXTYPE_SLAVE)
 			|| init_can(dlm_hcan3, DLM_ID, BXTYPE_MASTER))
@@ -94,7 +94,7 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2,
     move_ram_data_to_storage_init(&ram_data, dlm_file_name);
     transmit_ram_data_init(&ram_data);
 
-#ifdef DATA_SIM_MODE
+#ifdef SIMULATE_DATA_COLLECTION
     sim_init(&ram_data);
 #endif
 
@@ -123,17 +123,16 @@ static void change_led_state(U8 sender, void* parameter, U8 remote_param, U8 UNU
 //  request rate the DLM should support.
 void manage_data_aquisition()
 {
-	if (logging_status != LOGGING_ACTIVE)
+	if (logging_status == LOGGING_ACTIVE)
 	{
-		return;
-	}
-
-#ifndef DATA_SIM_MODE
-    request_all_buckets();
-    store_new_data();
+#ifndef SIMULATE_DATA_COLLECTION
+		request_all_buckets();
+    	store_new_data();
 #else
-    sim_generate_data();
+        sim_generate_data();
 #endif
+	}
+	osDelay(1);
 }
 
 
@@ -151,19 +150,16 @@ void manage_data_aquisition()
 //   - how many write cycles to the persistent storage we are ok giving up
 void move_ram_data_to_storage()
 {
-	if (logging_status != LOGGING_ACTIVE)
+	if (logging_status == LOGGING_ACTIVE)
 	{
-		return;
-	}
-
-    // TODO Use some logic to determine when the best time is to write to storage. Right
-	// now it just writes every 2 seconds
-#ifndef DATA_SIM_MODE
-	write_data_and_handle_errors();
+#ifndef AUTO_CLEAR_DATA
+		osDelay(250); // TODO this is too fast. Fix when the logging scheme is fixed
+		write_data_and_handle_errors();
 #else
-	sim_clear_ram();
-	osDelay(10000);
+		sim_clear_ram();
+		osDelay(10000);
 #endif
+	}
 }
 
 
@@ -175,9 +171,11 @@ void move_ram_data_to_storage()
 //  Arbitrarily every 1sec for now
 void transmit_ram_data()
 {
-	if (logging_status != LOGGING_ACTIVE) return;
-
-    transmit_data(&huart7);
+	osDelay(2000);
+	if (logging_status == LOGGING_ACTIVE)
+	{
+		transmit_data(&huart7);
+	}
 }
 
 
@@ -266,6 +264,8 @@ void can_service_loop()
 	service_can_tx_hardware(dlm_hcan1);
 	service_can_tx_hardware(dlm_hcan2);
 	service_can_tx_hardware(dlm_hcan3);
+
+	osDelay(1);
 }
 
 

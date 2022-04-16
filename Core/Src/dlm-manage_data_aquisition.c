@@ -309,8 +309,7 @@ void store_new_data()
 
             // if the parameter is pending an update and the last RX of the param is after the
             // request was sent, it needs to be added to RAM
-            if (param_array->pending_responce == TRUE
-                && param_info->last_rx >= bucket_node->bucket.last_request)
+            if (param_info->last_rx >= bucket_node->bucket.last_request)
             {
                 // add the param data to RAM
                 if (add_param_to_ram(param_array, bucket_node))
@@ -324,9 +323,6 @@ void store_new_data()
 
                 // adding the parameter was successful. Turn off the malloc failure LED
                 HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
-
-                // disable the pending responce flag
-                param_array->pending_responce = FALSE;
             }
 
             // move on to the next parameter
