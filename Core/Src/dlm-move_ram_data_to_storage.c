@@ -8,8 +8,6 @@
 #include "dlm-move_ram_data_to_storage.h"
 #include "GopherCAN.h"
 #include "dlm-storage_structs.h"
-#include "stm32f7xx_hal.h"
-#include "stm32f7xx_hal_gpio.h"
 #include "fatfs.h"
 #include "dlm-mutex.h"
 #include "cmsis_os.h"
@@ -17,7 +15,12 @@
 #include <string.h>
 #include <stdio.h>
 #include "dlm-util.h"
+#include "dlm-error_handling.h"
 
+static void run_sd_led(void);
+static SD_WRITE_ERR_t write_data_to_storage(void);
+static SD_WRITE_ERR_t mount_sd_card(void);
+static SD_WRITE_ERR_t create_new_file(const char* filename);
 
 // This is the same head for the RAM storage linked list in manage_data_aquisition
 DATA_INFO_NODE* ram_data_head_ptr;
@@ -33,84 +36,126 @@ FRESULT file_error_code = FR_OK;
 U32 bytes_written;
 const char* orig_actual_file_name;							// needed for if the file did not open the first time
 char actual_file_name[MAX_FILENAME_SIZE + MAX_APPEND_SIZE];	// give extra characters for numbers on the end, just in case
+
+// Status and error handling things
 SD_STATUS sd_status = SD_NOT_MOUNTED;
 U8 error_counter = 0;
+static GPIO_TypeDef* sd_led_port = NULL;
+static U16 sd_led_pin = 0;
 
 
 // move_ram_data_to_storage_init
 //  This function sets the local pointers to the correct values. Mounting the SD card is handled in the
 //  writing data loop
-void move_ram_data_to_storage_init(DATA_INFO_NODE* storage_ptr, const char* filename)
+void move_ram_data_to_storage_init(DATA_INFO_NODE* storage_ptr, const char* filename,
+								   GPIO_TypeDef* led_port, U16 led_pin)
 {
     ram_data_head_ptr = storage_ptr;
     orig_actual_file_name = filename;
 
+    sd_led_port = led_port;
+    sd_led_pin = led_pin;
+
     // toggle the LED once to note the init
-    HAL_GPIO_TogglePin(GPIOB, LED1_sd_write_Pin);
+    HAL_GPIO_TogglePin(sd_led_port, sd_led_pin);
 }
 
 
 // write_data_and_handle_errors
 //  this function will check if the SD card is mounted, make the file if needed,
-//  call write_data_to_storage, and handle file errors by unmounting the SD card
-S8 write_data_and_handle_errors()
+//  call write_data_to_storage, and handle file errors by unmounting the SD card.
+//  designed to be called with high frequency, but will not write to the SD every
+//  time the function is called
+void write_data_and_handle_errors()
 {
-	S8 error_code = 0;
+	SD_WRITE_ERR_t error_code = 0;
+	static U32 last_write;
+
+	run_sd_led();
+
+	// check if it is time to write to the SD, right now just do every
+	// 500ms, but maybe we could have smarter logic later
+	if (HAL_GetTick() - last_write < SD_WRITE_DELAY)
+	{
+		return;
+	}
+	last_write = HAL_GetTick();
 
 	// check if the SD card is mounted
 	if (sd_status != SD_MOUNTED)
 	{
-		// try again to mount the SD card. If it fails, return
-		if (mount_sd_card())
+		// try again to mount the SD card. If it fails, set the global error
+		// state and return
+		error_code = mount_sd_card();
+
+		switch (error_code)
 		{
-			return SD_MOUNTING_ERROR;
+		case SD_SUCCESS:
+			// clear error states and move on
+			clear_error_state(DLM_ERR_SD_MOUNT);
+			break;
+
+		case NO_SD_CARD:
+			// it is fine we could not mount, return without clearing any previous
+			// errors
+			return;
+
+		default:
+			// The SD card failed to mount even though it was detected. Set an error
+			// state and return
+			set_error_state(DLM_ERR_SD_MOUNT);
+			return;
 		}
 
 		// if the code reaches this point, the SD should be mounted with a new file made. Create
 		// a new file for the log file
-		if (create_new_file(orig_actual_file_name))
+		if (create_new_file(orig_actual_file_name) != SD_SUCCESS)
 		{
 			// there was an error creating the file. Unmount and return
 			f_mount(NULL, SDPath, 1);
-			return FILE_ERROR;
+			set_error_state(DLM_ERR_FILE_CREATE);
+			return;
 		}
+
+		// we were able to create a new file, clear the FILE CREATE error
+		clear_error_state(DLM_ERR_FILE_CREATE);
 	}
 
 	// now try to write to the file
 	error_code = write_data_to_storage();
 
-	// if a file operation fails, unmount and try remounting
-	if (error_code == FILE_ERROR)
+	switch (error_code)
 	{
+	case SD_SUCCESS:
+		// clear all SD writing errors, we are all good now
+		clear_error_state(DLM_ERR_NO_DATA);
+		clear_error_state(DLM_ERR_FILE_WRITE);
+
+		// toggle the SD LED to signal a successful write
+		if (sd_led_port) HAL_GPIO_TogglePin(sd_led_port, sd_led_pin);
+		error_counter = 0;
+		return;
+
+	case EMPTY_DATA_BUF:
+		// no data in the buffer. There may be a CAN error
+		set_error_state(DLM_ERR_NO_DATA);
+		return;
+
+	case FILE_ERROR:
+	default:
 		// note this error and check if too many in a row have occurred
 		error_counter++;
 
 		if (error_counter >= MAX_NUM_OF_ERRORS)
 		{
-			// try to close the file. This probably wont work at this point, but the thought is nice
-			f_close(&SDFile);
-
-			// unmount the SD card and try to mount it again next cycle
-			// TODO remounting does not work at the moment, so this is basically giving up
-			f_mount(NULL, SDPath, 1);
-			sd_status = SD_NOT_MOUNTED;
+			// we have failed to write many times in a row after a mounting. Something is very wrong,
+			// so reset the system and hope it works better next time
+			NVIC_SystemReset();
 		}
 
-		return FILE_ERROR;
+		set_error_state(DLM_ERR_FILE_WRITE);
+		return;
 	}
-
-	// if the data buffer is empty, there is prob a CAN error
-	if (error_code == EMPTY_DATA_BUFF)
-	{
-		// TODO handle this in some way, maybe reset the DAM-DLM init process, or tell the PDM to reset the DAMs
-		return EMPTY_DATA_BUFF;
-	}
-
-	// toggle the onboard LED every successful file write and reset the error counter
-	HAL_GPIO_TogglePin(GPIOB, LED1_sd_write_Pin);
-	error_counter = 0;
-
-	return RAM_SUCCESS;
 }
 
 
@@ -119,8 +164,11 @@ S8 write_data_and_handle_errors()
 //  to the SD card and deleting the node from the list. This function does not need to be thread
 //  safe as the STM32 is single threaded (except for RX and TX interrupts, which only affect
 //  the CAN buffers)
-S8 write_data_to_storage()
+static SD_WRITE_ERR_t write_data_to_storage(void)
 {
+	// TODO fix this to not malloc and free, but use a statically allocated buffer
+	// that can be written in one SD card write call
+
 	FRESULT fresult;
     DATA_INFO_NODE* data_node_above = ram_data_head_ptr;
     DATA_INFO_NODE* data_node = ram_data_head_ptr->next;
@@ -129,7 +177,7 @@ S8 write_data_to_storage()
     // check to make sure there is at least one datapoint
     if (data_node == NULL)
     {
-    	return EMPTY_DATA_BUFF;
+    	return EMPTY_DATA_BUF;
     }
 
     // The file is already open if the SD is mounted
@@ -140,6 +188,7 @@ S8 write_data_to_storage()
     	// get the mutex. It may not be needed for any nodes but the first data node after the head
     	while (!get_mutex_lock(&ram_data_mutex))
     	{
+    		// TODO taskYield would be beter
     		osDelay(1);
     	}
 
@@ -163,7 +212,6 @@ S8 write_data_to_storage()
     	release_mutex(&ram_data_mutex);
 
         // append the file with this new string
-    	// TODO change this to append a buffer, then write the whole buffer at once
         if ((fresult = f_write(&SDFile, data_point_str, DATA_POINT_STORAGE_SIZE, (UINT*)(&bytes_written))) != FR_OK)
         {
         	file_error_code = fresult;
@@ -172,7 +220,6 @@ S8 write_data_to_storage()
     }
 
     // sync the file. this replaces opening and closing the file
-    // TODO replace this with one write. Let it sync on its own time
     fresult = f_sync(&SDFile);
 
     if (fresult != FR_OK)
@@ -182,45 +229,13 @@ S8 write_data_to_storage()
 	}
 
     // everything worked. Return
-    return RAM_SUCCESS;
-}
-
-
-// build_data_string
-//  Convert the linked list data node in RAM to a string of data. Each
-//  data point will be stored as a 16bit parameter id, 32bit time value representing
-//  the ms from DLM startup, and 64bit double for the data value. This string is returned
-//  in U8* data_str. This must have 14B of memory available, or else bad things will happen.
-//  This function will also remove the data node from the LL
-void build_data_string(U8 data_str[], DATA_INFO_NODE* data_node)
-{
-    DPF_CONVERTER data_union;
-    U8 c;
-
-    // write the parameter to the first 2 bytes
-    for (c = 0; c < STORAGE_PARAM_SIZE; c++)
-    {
-        data_str[c] = (U8)(data_node->param >> (((STORAGE_PARAM_SIZE - 1) - c) * BITS_IN_BYTE));
-    }
-
-    // write the timestamp to the next 4 bytes
-    for (c = 0; c < TIMESTAMP_SIZE; c++)
-    {
-        data_str[c + STORAGE_PARAM_SIZE] = (U8)(data_node->data_time >> (((TIMESTAMP_SIZE - 1) - c) * BITS_IN_BYTE));
-    }
-
-    // write the double of the data to the last 8 bytes
-    data_union.d = convert_data_to_dpf(data_node);
-    for (c = 0; c < DATA_SIZE; c++)
-    {
-        data_str[c + STORAGE_PARAM_SIZE + TIMESTAMP_SIZE] = (U8)(data_union.u64 >> (((DATA_SIZE - 1) - c) * BITS_IN_BYTE));
-    }
+    return SD_SUCCESS;
 }
 
 
 // mount_sd_card
 //  this function will try to mount the SD card
-S8 mount_sd_card()
+static SD_WRITE_ERR_t mount_sd_card(void)
 {
 	FRESULT fresult;
 
@@ -230,7 +245,7 @@ S8 mount_sd_card()
 	{
 		// the SD is not inserted. Do not try to mount as it can cause a hardfault
 		sd_status = SD_NOT_INSERTED;
-		return SD_NOT_INSERTED;
+		return NO_SD_CARD;
 
 		// This logic replaces the FATfs logic for checking the SD card, that is why there is a warning
 		// when auto-generating code for SD
@@ -244,7 +259,7 @@ S8 mount_sd_card()
 	{
 		file_error_code = fresult;
 		sd_status = SD_NOT_MOUNTED;
-		return sd_status;
+		return MOUNT_FAILURE;
 	}
 
 	// check if another error has occurred
@@ -252,19 +267,19 @@ S8 mount_sd_card()
 	{
 		file_error_code = fresult;
 		sd_status = SD_MOUNTING_ERROR;
-		return sd_status;
+		return MOUNT_FAILURE;
 	}
 
 	// the mounting worked
 	sd_status = SD_MOUNTED;
-	return sd_status;
+	return SD_SUCCESS;
 }
 
 
 // create_new_file
 //  this function will create a new file for the DLM to write to, appending numbers to the end
 //  of the file name if needed. This function will modify actual_file_name as needed
-S8 create_new_file(const char* filename)
+static SD_WRITE_ERR_t create_new_file(const char* filename)
 {
 	FRESULT fresult;
 	U16 append_val = 0;
@@ -285,7 +300,7 @@ S8 create_new_file(const char* filename)
 	// if this filename is already taken, append a number on it and try again until it works
 	while (fresult == FR_EXIST)
 	{
-		// TODO this adds a number after the file type, not after the name
+		// NOTE: this adds a number after the file type, not after the name
 		append_val++;
 
 		// revert actual_file_name to the target filename
@@ -317,7 +332,47 @@ S8 create_new_file(const char* filename)
 	f_printf(&SDFile, "%s:\n", actual_file_name);
 
 	// everything worked. Return
-	return RAM_SUCCESS;
+	return SD_SUCCESS;
+}
+
+
+// run_sd_led
+//  This function is non-blocking and will blink the led according to the current
+//  SD status. If there is no error, the light will be toggled on each successful
+//  write
+static void run_sd_led(void)
+{
+	static U32 last_blink_time;
+	static U8 num_led_blinks;
+
+	// dont hardfault
+	if (!sd_led_port) return;
+
+	// if the SD is ok, let the write task handle blinking on each successful write
+	if (sd_status == SD_MOUNTED) return;
+
+	// there is an error active
+	if (!num_led_blinks)
+	{
+		// long delay and reset
+		if (HAL_GetTick() - last_blink_time >= ERR_WAIT_TIME)
+		{
+			HAL_GPIO_WritePin(sd_led_port, sd_led_pin, RESET);
+			last_blink_time = HAL_GetTick();
+			num_led_blinks = (U8)sd_status << 1; // double so there is an on and off for each blink number
+		}
+	}
+	else
+	{
+		if (HAL_GetTick() - last_blink_time >= ERR_BLINK_TIME)
+		{
+			HAL_GPIO_TogglePin(sd_led_port, sd_led_pin);
+			last_blink_time = HAL_GetTick();
+			num_led_blinks--;
+		}
+	}
+
+	return;
 }
 
 

@@ -5,12 +5,15 @@
 // includes
 #include "dlm-manage_data_aquisition.h"
 #include "dlm-mutex.h"
+#include "dlm-error_handling.h"
 #include <stdlib.h>
 #include "dlm-storage_structs.h"
 #include "base_types.h"
 #include "GopherCAN.h"
-#include "stm32f7xx_hal_gpio.h"
 #include "cmsis_os.h"
+
+
+static DLM_ERRORS_t add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node);
 
 
 // The head node for the linked list of all of the buckets.
@@ -24,9 +27,6 @@ BUCKET_NODE bucket_list_head = {{0, 0, 0, 0, 0, 0, NULL}, NULL};
 //  same reasons as the bucket LL, but a head node is required as deletion will
 //  be common
 DATA_INFO_NODE* ram_data_head;
-
-// variable to store the last error
-MDA_ERROR last_mda_error = NO_MDA_ERROR;
 
 
 // manage_data_aquisition_init
@@ -90,7 +90,7 @@ void set_bucket_size(U8 sending_dam, void* UNUSED,
         {
             // resend the command to restart the sequence and note the error
             send_can_command(PRIO_HIGH, sending_dam, SEND_BUCKET_PARAMS, 0, 0, 0, 0);
-            last_mda_error = MDA_MALLOC_ERROR;
+            set_error_state(DLM_ERR_MALLOC_ERR);
             return;
         }
 
@@ -125,7 +125,7 @@ void set_bucket_size(U8 sending_dam, void* UNUSED,
 	{
 		// resend the command to restart the sequence and note the error
 		send_can_command(PRIO_HIGH, sending_dam, SEND_BUCKET_PARAMS, 0, 0, 0, 0);
-		last_mda_error = MDA_MALLOC_ERROR;
+		set_error_state(DLM_ERR_MALLOC_ERR);
 		return;
 	}
 }
@@ -260,14 +260,14 @@ void request_all_buckets()
                 REQUEST_BUCKET, bucket_node->bucket.bucket_id, 0, 0, 0) != CAN_SUCCESS)
             {
                 // set the last error variable to note the CAN error
-                last_mda_error = MDA_CAN_ERROR;
+                set_error_state(DLM_ERR_CAN_ERR);
             }
 
             // set the pending response flag for each parameter in this bucket to true
             param_array = bucket_node->bucket.param_ids;
             for (c = 0; c < bucket_node->bucket.params_added; c++)
             {
-            	param_array->pending_responce = TRUE;
+            	param_array->pending_responce = TRUE; // TODO fix this
             	param_array++;
             }
 
@@ -309,20 +309,18 @@ void store_new_data()
 
             // if the parameter is pending an update and the last RX of the param is after the
             // request was sent, it needs to be added to RAM
+            // TODO do something with pending responce I think
             if (param_info->last_rx >= bucket_node->bucket.last_request)
             {
                 // add the param data to RAM
-                if (add_param_to_ram(param_array, bucket_node))
+            	DLM_ERRORS_t error = add_param_to_ram(param_array, bucket_node);
+                if (error != DLM_ERR_NO_ERR)
                 {
-                	last_mda_error = MDA_MALLOC_ERROR;
-
-                	// for now, turn on the onboard LED (ld2, blue)
-                	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
+                	set_error_state(error);
                 	return;
                 }
 
-                // adding the parameter was successful. Turn off the malloc failure LED
-                HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
+                // successfully added the data point to ram
             }
 
             // move on to the next parameter
@@ -337,11 +335,13 @@ void store_new_data()
 
 // add_param_to_ram
 //  Function to add the data of a specific parameter to the RAM buffer
-S8 add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node)
+static DLM_ERRORS_t add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node)
 {
     // Data will be stored in a linked list of nodes that include what parameter
     //  (param_id), the ms since startup that the datapoint was requested, and the param data.
     //  The size of the data can be obtained using the lookup table in GopherCAN
+
+	// TODO fix this to be the big buffer, not a stupid LL
 
     DATA_INFO_NODE* data_node;
     CAN_INFO_STRUCT* can_param_struct;
@@ -357,7 +357,7 @@ S8 add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node)
         // check for malloc failure
         if (u8_data_node == NULL)
         {
-            return DLM_MALLOC_ERROR;
+            return DLM_ERR_MALLOC_ERR;
         }
 
 		u8_data_node->data = ((U8_CAN_STRUCT*)(can_param_struct))->data;
@@ -371,7 +371,7 @@ S8 add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node)
         // check for malloc failure
         if (u16_data_node == NULL)
         {
-            return DLM_MALLOC_ERROR;
+            return DLM_ERR_MALLOC_ERR;
         }
 
 		u16_data_node->data = ((U16_CAN_STRUCT*)(can_param_struct))->data;
@@ -385,7 +385,7 @@ S8 add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node)
         // check for malloc failure
         if (u32_data_node == NULL)
         {
-            return DLM_MALLOC_ERROR;
+            return DLM_ERR_MALLOC_ERR;
         }
 
 		u32_data_node->data = ((U32_CAN_STRUCT*)(can_param_struct))->data;
@@ -399,7 +399,7 @@ S8 add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node)
         // check for malloc failure
         if (u64_data_node == NULL)
         {
-            return DLM_MALLOC_ERROR;
+            return DLM_ERR_MALLOC_ERR;
         }
 
 		u64_data_node->data = ((U64_CAN_STRUCT*)(can_param_struct))->data;
@@ -413,7 +413,7 @@ S8 add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node)
         // check for malloc failure
         if (s8_data_node == NULL)
         {
-            return DLM_MALLOC_ERROR;
+            return DLM_ERR_MALLOC_ERR;
         }
 
 		s8_data_node->data = ((S8_CAN_STRUCT*)(can_param_struct))->data;
@@ -427,7 +427,7 @@ S8 add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node)
         // check for malloc failure
         if (s16_data_node == NULL)
         {
-            return DLM_MALLOC_ERROR;
+            return DLM_ERR_MALLOC_ERR;
         }
 
 		s16_data_node->data = ((S16_CAN_STRUCT*)(can_param_struct))->data;
@@ -441,7 +441,7 @@ S8 add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node)
         // check for malloc failure
         if (s32_data_node == NULL)
         {
-            return DLM_MALLOC_ERROR;
+            return DLM_ERR_MALLOC_ERR;
         }
 
 		s32_data_node->data = ((S32_CAN_STRUCT*)(can_param_struct))->data;
@@ -455,7 +455,7 @@ S8 add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node)
         // check for malloc failure
         if (s64_data_node == NULL)
         {
-            return DLM_MALLOC_ERROR;
+            return DLM_ERR_MALLOC_ERR;
         }
 
 		s64_data_node->data = ((S64_CAN_STRUCT*)(can_param_struct))->data;
@@ -469,7 +469,7 @@ S8 add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node)
         // check for malloc failure
         if (float_data_node == NULL)
         {
-            return DLM_MALLOC_ERROR;
+            return DLM_ERR_MALLOC_ERR;
         }
 
 		float_data_node->data = ((FLOAT_CAN_STRUCT*)(can_param_struct))->data;
@@ -479,7 +479,7 @@ S8 add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node)
 
 	default:
 		// the datatype is not found for some reason
-        return DLM_DATATYPE_NOT_FOUND;
+        return DLM_ERR_DATATYPE;
 	}
 
     // set the time the data was taken as the time is was requested, as there is less
@@ -491,6 +491,7 @@ S8 add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node)
 
     while (!get_mutex_lock(&ram_data_mutex))
     {
+    	// TODO taskYield on this would be better
     	osDelay(1);
     }
 

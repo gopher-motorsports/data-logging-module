@@ -62,6 +62,39 @@ U8 append_byte(U8 packet[], U8 packetLength, U8 byte) {
     return packetLength + bytesFilled;
 }
 
+
+// build_data_string
+//  Convert the linked list data node in RAM to a string of data. Each
+//  data point will be stored as a 16bit parameter id, 32bit time value representing
+//  the ms from DLM startup, and 64bit double for the data value. This string is returned
+//  in U8* data_str. This must have 14B of memory available, or else bad things will happen.
+//  This function will also remove the data node from the LL
+void build_data_string(U8 data_str[], DATA_INFO_NODE* data_node)
+{
+    DPF_CONVERTER data_union;
+    U8 c;
+
+    // write the parameter to the first 2 bytes
+    for (c = 0; c < STORAGE_PARAM_SIZE; c++)
+    {
+        data_str[c] = (U8)(data_node->param >> (((STORAGE_PARAM_SIZE - 1) - c) * BITS_IN_BYTE));
+    }
+
+    // write the timestamp to the next 4 bytes
+    for (c = 0; c < TIMESTAMP_SIZE; c++)
+    {
+        data_str[c + STORAGE_PARAM_SIZE] = (U8)(data_node->data_time >> (((TIMESTAMP_SIZE - 1) - c) * BITS_IN_BYTE));
+    }
+
+    // write the double of the data to the last 8 bytes
+    data_union.d = convert_data_to_dpf(data_node);
+    for (c = 0; c < DATA_SIZE; c++)
+    {
+        data_str[c + STORAGE_PARAM_SIZE + TIMESTAMP_SIZE] = (U8)(data_union.u64 >> (((DATA_SIZE - 1) - c) * BITS_IN_BYTE));
+    }
+}
+
+
 // convert_data_to_dpf
 //  Function to take in a data node, get the data stored in it, and return
 //  the double precision float representation of that value to be stored on

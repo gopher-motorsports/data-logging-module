@@ -20,7 +20,6 @@ void assign_bucket_to_frq(U8 sending_dam, void* UNUSED,
     U8 bucket_id, U8 ms_between_requests_msb, U8 ms_between_requests_lsb, U8 UNUSED3);
 void request_all_buckets();
 void store_new_data();
-S8 add_param_to_ram(BUCKET_PARAM_INFO* param_node, BUCKET_NODE* bucket_node);
 
 
 // defines
