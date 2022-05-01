@@ -16,7 +16,7 @@
 typedef enum
 {
 	DLM_ERR_NO_ERR = 0,
-	DLM_ERR_MALLOC_ERR = 1,
+	DLM_ERR_MALLOC_ERR = 1, // TODO turn into a buffer full error
 	DLM_ERR_NO_DATA = 2,
 	DLM_ERR_CAN_ERR = 3,
 	DLM_ERR_SD_MOUNT = 4,

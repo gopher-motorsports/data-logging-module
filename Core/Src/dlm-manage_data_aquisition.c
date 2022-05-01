@@ -267,7 +267,7 @@ void request_all_buckets()
             param_array = bucket_node->bucket.param_ids;
             for (c = 0; c < bucket_node->bucket.params_added; c++)
             {
-            	param_array->pending_responce = TRUE; // TODO fix this
+            	param_array->pending_responce = TRUE;
             	param_array++;
             }
 
@@ -309,18 +309,23 @@ void store_new_data()
 
             // if the parameter is pending an update and the last RX of the param is after the
             // request was sent, it needs to be added to RAM
-            // TODO do something with pending responce I think
-            if (param_info->last_rx >= bucket_node->bucket.last_request)
+            if (param_info->last_rx >= bucket_node->bucket.last_request &&
+            	!param_info->pending_response)
             {
                 // add the param data to RAM
             	DLM_ERRORS_t error = add_param_to_ram(param_array, bucket_node);
                 if (error != DLM_ERR_NO_ERR)
                 {
-                	set_error_state(error);
+                	// DEBUG ignore malloc errors for now
+                	//set_error_state(error);
                 	return;
                 }
 
                 // successfully added the data point to ram
+
+                // the pending_responce flag is being hijacked for saving whether
+				// this data point has been logged
+				param_info->pending_response = TRUE;
             }
 
             // move on to the next parameter

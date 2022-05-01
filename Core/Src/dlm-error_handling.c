@@ -39,7 +39,8 @@ void run_led_task(void)
 		return;
 	}
 
-	if (curr_err != DLM_ERR_NO_ERR)
+	// this will wait until the led is done blinking an error until turning off
+	if (curr_err != DLM_ERR_NO_ERR || num_led_blinks > 0)
 	{
 		// there is an error active
 		if (!num_led_blinks)
@@ -64,11 +65,8 @@ void run_led_task(void)
 	}
 	else
 	{
-		if ((HAL_GetTick() - last_blink_time) >= NO_ERR_BLINK_TIME)
-		{
-			HAL_GPIO_TogglePin(err_port, err_pin);
-			last_blink_time = HAL_GetTick();
-		}
+		// turn off the LED when the error is finished being displayed
+		HAL_GPIO_WritePin(err_port, err_pin, RESET);
 	}
 }
 
