@@ -29,6 +29,7 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f7xx_hal.h"
+#include "cmsis_os2.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -42,7 +43,9 @@ extern "C" {
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-extern UART_HandleTypeDef huart7;
+extern osMutexId_t mutex_broadcast_bufferHandle;
+extern osMutexId_t mutex_storage_bufferHandle;
+extern osThreadId_t transmit_ram_Handle;
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
@@ -66,8 +69,8 @@ void Error_Handler(void);
 #define SD_Detected_GPIO_Port GPIOG
 #define XB_NCTS_Pin GPIO_PIN_6
 #define XB_NCTS_GPIO_Port GPIOC
-#define Malloc_failed_Pin GPIO_PIN_7
-#define Malloc_failed_GPIO_Port GPIOB
+#define Err_LED_Pin GPIO_PIN_7
+#define Err_LED_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

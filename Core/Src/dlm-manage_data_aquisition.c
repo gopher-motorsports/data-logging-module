@@ -4,13 +4,21 @@
 
 // includes
 #include "dlm-manage_data_aquisition.h"
-#include "dlm-mutex.h"
+#include "dlm-error_handling.h"
 #include <stdlib.h>
 #include "dlm-storage_structs.h"
 #include "base_types.h"
 #include "GopherCAN.h"
-#include "stm32f7xx_hal_gpio.h"
 #include "cmsis_os.h"
+#include "main.h"
+#include "dlm-high_level_functions.h"
+
+
+static DLM_ERRORS_t add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node,
+									 PPBuff* sd_buffer, PPBuff* telem_buffer);
+static DLM_ERRORS_t append_packet(PPBuff* buffer, U32 bufferSize, U32 timestamp,
+								  U16 id, void* data, U8 dataSize);
+static void append_byte(PPBuff* buffer, U8 byte);
 
 
 // The head node for the linked list of all of the buckets.
@@ -19,23 +27,12 @@
 //  must be able to handle a general amount of them.
 BUCKET_NODE bucket_list_head = {{0, 0, 0, 0, 0, 0, NULL}, NULL};
 
-// Head node pointer and first pointer to the linked list for all of the data points
-//  in the RAM data buffer. A linked list is a good candidate for many of the
-//  same reasons as the bucket LL, but a head node is required as deletion will
-//  be common
-DATA_INFO_NODE* ram_data_head;
-
-// variable to store the last error
-MDA_ERROR last_mda_error = NO_MDA_ERROR;
-
 
 // manage_data_aquisition_init
 //  Assign the pointer to the head node, set up the CAN commands, and tell the DAMs to start
 //  defining their buckets
-void manage_data_aquisition_init(DATA_INFO_NODE* ram_data)
+void manage_data_aquisition_init(void)
 {
-    ram_data_head = ram_data;
-
     // Add the correct CAN command functions
     add_custom_can_func(SET_BUCKET_SIZE, &set_bucket_size, TRUE, NULL);
     add_custom_can_func(ADD_PARAM_TO_BUCKET, &add_param_to_bucket, TRUE, NULL);
@@ -90,7 +87,7 @@ void set_bucket_size(U8 sending_dam, void* UNUSED,
         {
             // resend the command to restart the sequence and note the error
             send_can_command(PRIO_HIGH, sending_dam, SEND_BUCKET_PARAMS, 0, 0, 0, 0);
-            last_mda_error = MDA_MALLOC_ERROR;
+            set_error_state(DLM_ERR_MALLOC_ERR);
             return;
         }
 
@@ -125,7 +122,7 @@ void set_bucket_size(U8 sending_dam, void* UNUSED,
 	{
 		// resend the command to restart the sequence and note the error
 		send_can_command(PRIO_HIGH, sending_dam, SEND_BUCKET_PARAMS, 0, 0, 0, 0);
-		last_mda_error = MDA_MALLOC_ERROR;
+		set_error_state(DLM_ERR_MALLOC_ERR);
 		return;
 	}
 }
@@ -241,7 +238,7 @@ void assign_bucket_to_frq(U8 sending_dam, void* UNUSED,
 // request_all_buckets
 //  Function to run through the list of buckets and checks if they need to be requested. If they do,
 //  request it
-void request_all_buckets()
+void request_all_buckets(void)
 {
 	// Skip the head node
     BUCKET_NODE* bucket_node = bucket_list_head.next;
@@ -260,7 +257,7 @@ void request_all_buckets()
                 REQUEST_BUCKET, bucket_node->bucket.bucket_id, 0, 0, 0) != CAN_SUCCESS)
             {
                 // set the last error variable to note the CAN error
-                last_mda_error = MDA_CAN_ERROR;
+                set_error_state(DLM_ERR_CAN_ERR);
             }
 
             // set the pending response flag for each parameter in this bucket to true
@@ -287,7 +284,7 @@ void request_all_buckets()
 //  Function to figure out what data stored in the GopherCAN parameters is new
 //  based on data in the bucket linked list. If it deturmines the data is new,
 //  store that data to the data ring buffer
-void store_new_data()
+void store_new_data(PPBuff* sd_buffer, PPBuff* telem_buffer)
 {
 	// Skip the head node
     BUCKET_NODE* bucket_node = bucket_list_head.next;
@@ -309,20 +306,23 @@ void store_new_data()
 
             // if the parameter is pending an update and the last RX of the param is after the
             // request was sent, it needs to be added to RAM
-            if (param_info->last_rx >= bucket_node->bucket.last_request)
+            if (param_info->last_rx >= bucket_node->bucket.last_request &&
+            	!param_info->pending_response)
             {
                 // add the param data to RAM
-                if (add_param_to_ram(param_array, bucket_node))
+            	DLM_ERRORS_t error = add_param_to_ram(param_array, bucket_node, sd_buffer, telem_buffer);
+                if (error != DLM_ERR_NO_ERR)
                 {
-                	last_mda_error = MDA_MALLOC_ERROR;
-
-                	// for now, turn on the onboard LED (ld2, blue)
-                	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
+                	set_error_state(error);
                 	return;
                 }
 
-                // adding the parameter was successful. Turn off the malloc failure LED
-                HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
+                // successfully added the data point to ram
+                clear_error_state(DLM_ERR_RAM_FAIL);
+
+                // the pending_responce flag is being hijacked for saving whether
+				// this data point has been logged
+				param_info->pending_response = TRUE;
             }
 
             // move on to the next parameter
@@ -337,175 +337,141 @@ void store_new_data()
 
 // add_param_to_ram
 //  Function to add the data of a specific parameter to the RAM buffer
-S8 add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node)
+static DLM_ERRORS_t add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node,
+									 PPBuff* sd_buffer, PPBuff* telem_buffer)
 {
-    // Data will be stored in a linked list of nodes that include what parameter
-    //  (param_id), the ms since startup that the datapoint was requested, and the param data.
-    //  The size of the data can be obtained using the lookup table in GopherCAN
-
-    DATA_INFO_NODE* data_node;
-    CAN_INFO_STRUCT* can_param_struct;
-
-    can_param_struct = (CAN_INFO_STRUCT*)(all_parameter_structs[param_info->parameter]);
-
-    // Choose the correct type of data node based on the parameter data type, then malloc the memory needed
+	// add the data to the PPBuffs for both the SD write and telem buffers
+    CAN_INFO_STRUCT* can_param_struct = (CAN_INFO_STRUCT*)(all_parameter_structs[param_info->parameter]);
+    U8 data_size;
+    DLM_ERRORS_t error;
+    void* data_ptr;
+    // get the size of the parameter based on the data type
     switch (parameter_data_types[param_info->parameter])
 	{
-	case UNSIGNED8: ;
-        U8_DATA_NODE* u8_data_node = (U8_DATA_NODE*)malloc(sizeof(U8_DATA_NODE));
-
-        // check for malloc failure
-        if (u8_data_node == NULL)
-        {
-            return DLM_MALLOC_ERROR;
-        }
-
-		u8_data_node->data = ((U8_CAN_STRUCT*)(can_param_struct))->data;
-        data_node = (DATA_INFO_NODE*)u8_data_node;
-
-        break;
-
-	case UNSIGNED16: ;
-		U16_DATA_NODE* u16_data_node = (U16_DATA_NODE*)malloc(sizeof(U16_DATA_NODE));
-
-        // check for malloc failure
-        if (u16_data_node == NULL)
-        {
-            return DLM_MALLOC_ERROR;
-        }
-
-		u16_data_node->data = ((U16_CAN_STRUCT*)(can_param_struct))->data;
-        data_node = (DATA_INFO_NODE*)u16_data_node;
-
-        break;
-
-	case UNSIGNED32: ;
-		U32_DATA_NODE* u32_data_node = (U32_DATA_NODE*)malloc(sizeof(U32_DATA_NODE));
-
-        // check for malloc failure
-        if (u32_data_node == NULL)
-        {
-            return DLM_MALLOC_ERROR;
-        }
-
-		u32_data_node->data = ((U32_CAN_STRUCT*)(can_param_struct))->data;
-        data_node = (DATA_INFO_NODE*)u32_data_node;
-
-        break;
-
-	case UNSIGNED64: ;
-		U64_DATA_NODE* u64_data_node = (U64_DATA_NODE*)malloc(sizeof(U64_DATA_NODE));
-
-        // check for malloc failure
-        if (u64_data_node == NULL)
-        {
-            return DLM_MALLOC_ERROR;
-        }
-
-		u64_data_node->data = ((U64_CAN_STRUCT*)(can_param_struct))->data;
-        data_node = (DATA_INFO_NODE*)u64_data_node;
-
-        break;
-
-	case SIGNED8: ;
-		S8_DATA_NODE* s8_data_node = (S8_DATA_NODE*)malloc(sizeof(S8_DATA_NODE));
-
-        // check for malloc failure
-        if (s8_data_node == NULL)
-        {
-            return DLM_MALLOC_ERROR;
-        }
-
-		s8_data_node->data = ((S8_CAN_STRUCT*)(can_param_struct))->data;
-        data_node = (DATA_INFO_NODE*)s8_data_node;
-
-        break;
-
-	case SIGNED16: ;
-		S16_DATA_NODE* s16_data_node = (S16_DATA_NODE*)malloc(sizeof(S16_DATA_NODE));
-
-        // check for malloc failure
-        if (s16_data_node == NULL)
-        {
-            return DLM_MALLOC_ERROR;
-        }
-
-		s16_data_node->data = ((S16_CAN_STRUCT*)(can_param_struct))->data;
-        data_node = (DATA_INFO_NODE*)s16_data_node;
-
-        break;
-
-	case SIGNED32: ;
-		S32_DATA_NODE* s32_data_node = (S32_DATA_NODE*)malloc(sizeof(S32_DATA_NODE));
-
-        // check for malloc failure
-        if (s32_data_node == NULL)
-        {
-            return DLM_MALLOC_ERROR;
-        }
-
-		s32_data_node->data = ((S32_CAN_STRUCT*)(can_param_struct))->data;
-        data_node = (DATA_INFO_NODE*)s32_data_node;
-
-        break;
-
-	case SIGNED64: ;
-		S64_DATA_NODE* s64_data_node = (S64_DATA_NODE*)malloc(sizeof(S64_DATA_NODE));
-
-        // check for malloc failure
-        if (s64_data_node == NULL)
-        {
-            return DLM_MALLOC_ERROR;
-        }
-
-		s64_data_node->data = ((S64_CAN_STRUCT*)(can_param_struct))->data;
-        data_node = (DATA_INFO_NODE*)s64_data_node;
-
-        break;
-
-	case FLOATING: ;
-		FLOAT_DATA_NODE* float_data_node = (FLOAT_DATA_NODE*)malloc(sizeof(FLOAT_DATA_NODE));
-
-        // check for malloc failure
-        if (float_data_node == NULL)
-        {
-            return DLM_MALLOC_ERROR;
-        }
-
-		float_data_node->data = ((FLOAT_CAN_STRUCT*)(can_param_struct))->data;
-        data_node = (DATA_INFO_NODE*)float_data_node;
-
-        break;
-
+	case UNSIGNED8:
+		data_size = sizeof(U8);
+		data_ptr = &((U8_CAN_STRUCT*)can_param_struct)->data;
+		break;
+	case UNSIGNED16:
+			data_size = sizeof(U16);
+			data_ptr = &((U16_CAN_STRUCT*)can_param_struct)->data;
+			break;
+	case UNSIGNED32:
+			data_size = sizeof(U32);
+			data_ptr = &((U32_CAN_STRUCT*)can_param_struct)->data;
+			break;
+	case UNSIGNED64:
+			data_size = sizeof(U64);
+			data_ptr = &((U64_CAN_STRUCT*)can_param_struct)->data;
+			break;
+	case SIGNED8:
+			data_size = sizeof(S8);
+			data_ptr = &((S8_CAN_STRUCT*)can_param_struct)->data;
+			break;
+	case SIGNED16:
+			data_size = sizeof(S16);
+			data_ptr = &((S16_CAN_STRUCT*)can_param_struct)->data;
+			break;
+	case SIGNED32:
+			data_size = sizeof(S32);
+			data_ptr = &((S32_CAN_STRUCT*)can_param_struct)->data;
+			break;
+	case SIGNED64:
+			data_size = sizeof(S64);
+			data_ptr = &((S64_CAN_STRUCT*)can_param_struct)->data;
+			break;
+	case FLOATING:
+			data_size = sizeof(float);
+			data_ptr = &((FLOAT_CAN_STRUCT*)can_param_struct)->data;
+			break;
 	default:
 		// the datatype is not found for some reason
-        return DLM_DATATYPE_NOT_FOUND;
+        return DLM_ERR_DATATYPE;
 	}
 
     // set the time the data was taken as the time is was requested, as there is less
     // TX delay than RX delay
-    data_node->data_time = bucket_node->bucket.last_request;
+    if (osMutexAcquire(mutex_storage_bufferHandle,
+    				   MUTEX_GET_TIMEOUT_ms) != osOK) return DLM_ERR_MUTEX;
+    error = append_packet(sd_buffer, STORAGE_BUFFER_SIZE, bucket_node->bucket.last_request,
+		      param_info->parameter, data_ptr, data_size);
+    if (osMutexRelease(mutex_storage_bufferHandle) != osOK) return DLM_ERR_MUTEX;
+    if (error != DLM_ERR_NO_ERR) return error;
 
-    // the parameter id is stored in the data of the parameter node
-    data_node->param = param_info->parameter;
 
-    while (!get_mutex_lock(&ram_data_mutex))
-    {
-    	osDelay(1);
-    }
-
-    // DEBUG just trying shit at this point
-    taskENTER_CRITICAL();
-
-   	// add the new node to the front of the list, after the head node
-   	data_node->next = ram_data_head->next;
-  	ram_data_head->next = data_node;
-
-  	// DEBUG
-  	taskEXIT_CRITICAL();
-    release_mutex(&ram_data_mutex);
+	// TODO: only append whitelisted packets to telem buffer
+	if (osMutexAcquire(mutex_broadcast_bufferHandle,
+					   MUTEX_GET_TIMEOUT_ms) != osOK) return DLM_ERR_MUTEX;
+	error = append_packet(telem_buffer, BROADCAST_BUFFER_SIZE, bucket_node->bucket.last_request,
+				  param_info->parameter, data_ptr, data_size);
+	if (osMutexRelease(mutex_broadcast_bufferHandle) != osOK) return DLM_ERR_MUTEX;
+	if (error != DLM_ERR_NO_ERR) return error;
 
     return DLM_SUCCESS;
+}
+
+static DLM_ERRORS_t append_packet(PPBuff* buffer, U32 bufferSize, U32 timestamp,
+								  U16 id, void* data, U8 dataSize)
+{
+	// calculate the packet size and available buffer space. We will assume each each
+	// character is an escape byte to make sure we never write to far
+	U8 packetSize = (1 + sizeof(timestamp) + sizeof(id) + dataSize) * 2;
+	U32 freeSpace = bufferSize - buffer->fill;
+	if (packetSize > freeSpace)
+	{
+		// this packet won't fit
+		return DLM_ERR_RAM_FAIL;
+	}
+
+	// find the write buffer based on the buffer not being read from
+	U8* buff = buffer->buffs[buffer->write];
+    U8 i;
+    U8* bytes;
+
+    // insert start byte
+    buff[buffer->fill++] = START_BYTE;
+
+    // append components with MSB first
+    bytes = (U8*) &(timestamp);
+    for (i = sizeof(timestamp); i > 0; i--)
+    {
+        append_byte(buffer, bytes[i - 1]);
+    }
+
+    bytes = (U8*) &(id);
+    for (i = sizeof(id); i > 0; i--)
+    {
+		append_byte(buffer, bytes[i - 1]);
+	}
+
+    bytes = (U8*) data;
+    for (i = dataSize; i > 0; i--)
+    {
+		append_byte(buffer, bytes[i - 1]);
+	}
+
+    // success
+    return DLM_ERR_NO_ERR;
+}
+
+static void append_byte(PPBuff* buffer, U8 byte)
+{
+	// find the write buffer
+	U8* buff = buffer->buffs[buffer->write];
+
+    // check for a control byte
+    if (byte == START_BYTE || byte == ESCAPE_BYTE)
+    {
+        // append an escape byte
+    	buff[buffer->fill++] = ESCAPE_BYTE;
+        // append the desired byte, escaped
+    	buff[buffer->fill++] = byte ^ ESCAPE_XOR;
+    }
+    else
+    {
+    	// append the raw byte
+    	buff[buffer->fill++] = byte;
+    }
 }
 
 

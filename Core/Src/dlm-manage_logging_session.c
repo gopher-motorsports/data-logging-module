@@ -1,5 +1,5 @@
 // dlm-manage_logging_session.c
-//  TODO DOCS
+//  Manage the RTC and generate filenames accordingly
 
 
 // self include

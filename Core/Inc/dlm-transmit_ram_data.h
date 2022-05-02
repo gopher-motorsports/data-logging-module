@@ -12,7 +12,11 @@
 #include "dlm-storage_structs.h"
 #include "main.h"
 
-void transmit_ram_data_init(DATA_INFO_NODE* ram_ptr);
-void transmit_data(UART_HandleTypeDef* uart);
+
+#define FLAG_TRANSFER_DONE 0x00000001U
+#define MUTEX_WAIT_TIME_ms 500
+
+void transmit_data_init(void);
+void transmit_data(PPBuff* telem_buffer, UART_HandleTypeDef* uart);
 
 #endif /* INC_DLM_TRANSMIT_RAM_DATA_H_ */
