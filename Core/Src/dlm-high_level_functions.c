@@ -113,10 +113,6 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2,
     move_ram_data_to_storage_init(dlm_file_name, sd_write_port, sd_write_pin);
     transmit_data_init();
 
-#ifdef SIMULATE_DATA_COLLECTION
-    sim_init(&ram_data);
-#endif
-
     // in REV1 we will start the logging session right away
     begin_logging_session();
 
@@ -143,7 +139,7 @@ void manage_data_aquisition()
 			request_all_buckets();
 			store_new_data(&sd_buffer, &telem_buffer);
 	#else
-			sim_generate_data();
+			sim_generate_data(&sd_buffer, &telem_buffer);
 	#endif
 		}
 		osDelay(1);
@@ -173,7 +169,7 @@ void move_ram_data_to_storage()
 			osDelay(1); // The data write function controls when to actually write to the SD
 			write_data_and_handle_errors(&sd_buffer);
 	#else
-			sim_clear_ram();
+			sim_swap_sd_buffer(&sd_buffer);
 			osDelay(10000);
 	#endif
 		}
@@ -205,7 +201,7 @@ void transmit_ram_data()
 	while (TRUE)
 	{
 		osThreadFlagsWait(FLAG_TRANSFER_DONE, osFlagsWaitAny, 0);
-		osDelay(500);
+		osDelay(1000);
 		if (logging_status == LOGGING_ACTIVE)
 		{
 			transmit_data(&telem_buffer, dlm_huart);

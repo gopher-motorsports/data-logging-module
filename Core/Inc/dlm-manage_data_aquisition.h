@@ -8,6 +8,7 @@
 #include "base_types.h"
 #include "GopherCAN.h"
 #include "dlm-storage_structs.h"
+#include "dlm-error_handling.h"
 
 // function prototypes
 void manage_data_aquisition_init(void);
@@ -20,20 +21,13 @@ void assign_bucket_to_frq(U8 sending_dam, void* UNUSED,
     U8 bucket_id, U8 ms_between_requests_msb, U8 ms_between_requests_lsb, U8 UNUSED3);
 void request_all_buckets(void);
 void store_new_data(PPBuff* sd_buffer, PPBuff* telem_buffer);
+DLM_ERRORS_t add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node,
+									 PPBuff* sd_buffer, PPBuff* telem_buffer);
 
 
 // defines
-#define DLM_SUCCESS 0
 #define DLM_MALLOC_ERROR -1
 #define DLM_DATATYPE_NOT_FOUND -2
-
-// byte to indicate the start of a packet
-#define START_BYTE 0x7e
-// byte to indicate that the next byte has been escaped
-#define ESCAPE_BYTE 0x7d
-#define ESCAPE_XOR 0x20
-
-#define MUTEX_GET_TIMEOUT_ms 500
 
 // error enum (MDA = manage data aquisition)
 typedef enum
