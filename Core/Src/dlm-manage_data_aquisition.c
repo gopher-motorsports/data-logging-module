@@ -12,14 +12,7 @@
 #include "cmsis_os.h"
 #include "main.h"
 #include "dlm-high_level_functions.h"
-
-
-static DLM_ERRORS_t add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node,
-									 PPBuff* sd_buffer, PPBuff* telem_buffer);
-static DLM_ERRORS_t append_packet(PPBuff* buffer, U32 bufferSize, U32 timestamp,
-								  U16 id, void* data, U8 dataSize);
-static void append_byte(PPBuff* buffer, U8 byte);
-
+#include "dlm-util.h"
 
 // The head node for the linked list of all of the buckets.
 //  A linked list is a good canidate for storing all of the buckets because they will need
@@ -337,7 +330,7 @@ void store_new_data(PPBuff* sd_buffer, PPBuff* telem_buffer)
 
 // add_param_to_ram
 //  Function to add the data of a specific parameter to the RAM buffer
-static DLM_ERRORS_t add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node,
+DLM_ERRORS_t add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node,
 									 PPBuff* sd_buffer, PPBuff* telem_buffer)
 {
 	// add the data to the PPBuffs for both the SD write and telem buffers
@@ -408,70 +401,6 @@ static DLM_ERRORS_t add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE*
 	if (error != DLM_ERR_NO_ERR) return error;
 
     return DLM_SUCCESS;
-}
-
-static DLM_ERRORS_t append_packet(PPBuff* buffer, U32 bufferSize, U32 timestamp,
-								  U16 id, void* data, U8 dataSize)
-{
-	// calculate the packet size and available buffer space. We will assume each each
-	// character is an escape byte to make sure we never write to far
-	U8 packetSize = (1 + sizeof(timestamp) + sizeof(id) + dataSize) * 2;
-	U32 freeSpace = bufferSize - buffer->fill;
-	if (packetSize > freeSpace)
-	{
-		// this packet won't fit
-		return DLM_ERR_RAM_FAIL;
-	}
-
-	// find the write buffer based on the buffer not being read from
-	U8* buff = buffer->buffs[buffer->write];
-    U8 i;
-    U8* bytes;
-
-    // insert start byte
-    buff[buffer->fill++] = START_BYTE;
-
-    // append components with MSB first
-    bytes = (U8*) &(timestamp);
-    for (i = sizeof(timestamp); i > 0; i--)
-    {
-        append_byte(buffer, bytes[i - 1]);
-    }
-
-    bytes = (U8*) &(id);
-    for (i = sizeof(id); i > 0; i--)
-    {
-		append_byte(buffer, bytes[i - 1]);
-	}
-
-    bytes = (U8*) data;
-    for (i = dataSize; i > 0; i--)
-    {
-		append_byte(buffer, bytes[i - 1]);
-	}
-
-    // success
-    return DLM_ERR_NO_ERR;
-}
-
-static void append_byte(PPBuff* buffer, U8 byte)
-{
-	// find the write buffer
-	U8* buff = buffer->buffs[buffer->write];
-
-    // check for a control byte
-    if (byte == START_BYTE || byte == ESCAPE_BYTE)
-    {
-        // append an escape byte
-    	buff[buffer->fill++] = ESCAPE_BYTE;
-        // append the desired byte, escaped
-    	buff[buffer->fill++] = byte ^ ESCAPE_XOR;
-    }
-    else
-    {
-    	// append the raw byte
-    	buff[buffer->fill++] = byte;
-    }
 }
 
 

@@ -12,8 +12,8 @@
 #define TESTER_FILE_NAME "/dlm_data.gdat"
 
 // uncomment for sim mode
-//#define SIMULATE_DATA_COLLECTION
-//#define AUTO_CLEAR_DATA
+#define SIMULATE_DATA_COLLECTION
+#define AUTO_CLEAR_DATA
 
 // size in bytes for half of the ping-pong buffer
 #define STORAGE_BUFFER_SIZE 128000
