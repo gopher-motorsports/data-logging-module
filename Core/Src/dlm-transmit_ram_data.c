@@ -10,44 +10,41 @@
 #include "dlm-transmit_ram_data.h"
 #include "dlm-move_ram_data_to_storage.h"
 #include "dlm-storage_structs.h"
-#include "dlm-mutex.h"
-#include "dlm-util.h"
+#include "dlm-error_handling.h"
 #include "GopherCAN.h"
 
-DATA_INFO_NODE* ram_data_head;
-
-void transmit_ram_data_init(DATA_INFO_NODE* ram_ptr) {
-	ram_data_head = ram_ptr;
+void transmit_data_init(void)
+{
+	// clear transfer flag initially
+	osThreadFlagsSet(transmit_ram_Handle, FLAG_TRANSFER_DONE);
 }
 
-void transmit_data(UART_HandleTypeDef* uart) {
-	static DATA_INFO_NODE* prevTransmission = NULL;
-	U8 packet[32];
-	DATA_INFO_NODE* node = ram_data_head->next;
-	DATA_INFO_NODE* transmissionHead = node;
-
-	// step through nodes from the buffer head to the start of the last transmission
-	while (node != NULL && node != prevTransmission) {
-		// wait for access to the data buffer
-		while (!get_mutex_lock(&ram_data_mutex)) {
-			osDelay(1);
-		}
-		taskENTER_CRITICAL();
-
-		// build a packet from the data node
-		U8 packetLength = packetize_node(node, packet);
-		node = node->next;
-
-		taskEXIT_CRITICAL();
-		release_mutex(&ram_data_mutex);
-
-		// if the xbee buffer has space, send packet
-		U8 xbFull = HAL_GPIO_ReadPin(XB_NCTS_GPIO_Port, XB_NCTS_Pin);
-		if (!xbFull) {
-			HAL_UART_Transmit(uart, packet, packetLength, HAL_MAX_DELAY);
-		}
+void transmit_data(PPBuff* telem_buffer, UART_HandleTypeDef* uart)
+{
+	if (osMutexAcquire(mutex_broadcast_bufferHandle, MUTEX_WAIT_TIME_ms) != osOK)
+	{
+		set_error_state(DLM_ERR_MUTEX);
+		return;
+	}
+	// ping-pong the buffer
+	uint32_t transferSize = telem_buffer->fill;
+	telem_buffer->fill = 0;
+	telem_buffer->write = !telem_buffer->write;
+	if (osMutexRelease(mutex_broadcast_bufferHandle) != osOK)
+	{
+		set_error_state(DLM_ERR_MUTEX);
+		return;
 	}
 
-	// remember the first node in this transmission
-	prevTransmission = transmissionHead;
+	// start transfer
+	HAL_UART_Transmit_DMA(uart, telem_buffer->buffs[!telem_buffer->write], transferSize);
 }
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
+{
+	// tell the broadcast thread that the transfer is complete
+	osThreadFlagsSet(transmit_ram_Handle, FLAG_TRANSFER_DONE);
+}
+
+
+// End of dlm-transmit_ram_data.c

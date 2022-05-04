@@ -1,108 +1,72 @@
 /*
  * dlm-util.c
  *
- *  Created on: Apr 5, 2022
+ *  Created on: May 2, 2022
  *      Author: jonathan
  */
 
 #include "dlm-util.h"
-#include "dlm-storage_structs.h"
-#include "GopherCAN.h"
 
-// takes a data node, breaks it into bytes, and writes it to a packet (byte array)
-// returns the length of the packet
-U8 packetize_node(DATA_INFO_NODE* node, U8 packet[]) {
-    U8 i;
-    U8* bytes;
-    U8 packetLength = 0;
-
-    packet[packetLength] = (U8) 0x7e;
-    packetLength++;
-
-    for (i = sizeof(node->data_time); i > 0; i--) {
-        bytes = (U8*) &(node->data_time);
-        packetLength = append_byte(packet, packetLength, bytes[i - 1]);
-    }
-
-    for (i = sizeof(node->param); i > 0; i--) {
-        bytes = (U8*) &(node->param);
-        packetLength = append_byte(packet, packetLength, bytes[i - 1]);
-    }
-
-    // write the double of the data to the last 8 bytes
-    DPF_CONVERTER data_union;
-	data_union.d = convert_data_to_dpf(node);
-    for (i = sizeof(data_union.u64); i > 0; i--) {
-        bytes = (U8*) &(data_union.u64);
-        packetLength = append_byte(packet, packetLength, bytes[i - 1]);
-    }
-
-    return packetLength;
-}
-
-// escapes a byte if necessary, then appends it to the packet
-// takes the current length of the packet and the byte to append
-// returns the new packet length
-U8 append_byte(U8 packet[], U8 packetLength, U8 byte) {
-    U8 bytesFilled = 0;
-
-    // check for a control byte
-    if (byte == 0x7e || byte == 0x7d) {
-        // append an escape byte
-        packet[packetLength + bytesFilled] = 0x7d;
-        bytesFilled++;
-        // append escaped byte
-        packet[packetLength + bytesFilled] = byte ^ 0x20;
-        bytesFilled++;
-    } else {
-        packet[packetLength + bytesFilled] = byte;
-        bytesFilled++;
-    }
-
-    return packetLength + bytesFilled;
-}
-
-// convert_data_to_dpf
-//  Function to take in a data node, get the data stored in it, and return
-//  the double precision float representation of that value to be stored on
-//  the external SD card
-double convert_data_to_dpf(DATA_INFO_NODE* data_node)
+DLM_ERRORS_t append_packet(PPBuff* buffer, U32 bufferSize, U32 timestamp,
+								  U16 id, void* data, U8 dataSize)
 {
-    // switch to get the data out of the data_node
-    switch (parameter_data_types[data_node->param])
+	// calculate the packet size and available buffer space. We will assume each each
+	// character is an escape byte to make sure we never write to far
+	U8 packetSize = (1 + sizeof(timestamp) + sizeof(id) + dataSize) * 2;
+	U32 freeSpace = bufferSize - buffer->fill;
+	if (packetSize > freeSpace)
 	{
-	case UNSIGNED8:
-		return (double)(((U8_DATA_NODE*)data_node)->data);
-
-	case UNSIGNED16:
-		return (double)(((U16_DATA_NODE*)data_node)->data);
-
-	case UNSIGNED32:
-		return (double)(((U32_DATA_NODE*)data_node)->data);
-
-	case UNSIGNED64:
-		return (double)(((U64_DATA_NODE*)data_node)->data);
-
-	case SIGNED8:
-		return (double)(((S8_DATA_NODE*)data_node)->data);
-
-	case SIGNED16:
-		return (double)(((S16_DATA_NODE*)data_node)->data);
-
-	case SIGNED32:
-		return (double)(((S32_DATA_NODE*)data_node)->data);
-
-	case SIGNED64:
-		return (double)(((S64_DATA_NODE*)data_node)->data);
-
-	case FLOATING:
-		return (double)(((FLOAT_DATA_NODE*)data_node)->data);
-
-	default:
-        // Something went wrong, just write 0 to data
-		return 0;
+		// this packet won't fit
+		return DLM_ERR_RAM_FAIL;
 	}
 
-    // this coude should not be reached, this is to make the compiler happy
-    return 0;
+	// find the write buffer based on the buffer not being read from
+	U8* buff = buffer->buffs[buffer->write];
+    U8 i;
+    U8* bytes;
+
+    // insert start byte
+    buff[buffer->fill++] = START_BYTE;
+
+    // append components with MSB first
+    bytes = (U8*) &(timestamp);
+    for (i = sizeof(timestamp); i > 0; i--)
+    {
+        append_byte(buffer, bytes[i - 1]);
+    }
+
+    bytes = (U8*) &(id);
+    for (i = sizeof(id); i > 0; i--)
+    {
+		append_byte(buffer, bytes[i - 1]);
+	}
+
+    bytes = (U8*) data;
+    for (i = dataSize; i > 0; i--)
+    {
+		append_byte(buffer, bytes[i - 1]);
+	}
+
+    // success
+    return DLM_ERR_NO_ERR;
+}
+
+void append_byte(PPBuff* buffer, U8 byte)
+{
+	// find the write buffer
+	U8* buff = buffer->buffs[buffer->write];
+
+    // check for a control byte
+    if (byte == START_BYTE || byte == ESCAPE_BYTE)
+    {
+        // append an escape byte
+    	buff[buffer->fill++] = ESCAPE_BYTE;
+        // append the desired byte, escaped
+    	buff[buffer->fill++] = byte ^ ESCAPE_XOR;
+    }
+    else
+    {
+    	// append the raw byte
+    	buff[buffer->fill++] = byte;
+    }
 }

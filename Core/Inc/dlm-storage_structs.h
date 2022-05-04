@@ -45,88 +45,12 @@ struct BUCKET_NODE
     BUCKET_NODE* next;
 };
 
-
-// Node of all of the data storage info, but not the data
-typedef struct DATA_INFO_NODE DATA_INFO_NODE;
-struct DATA_INFO_NODE
-{
-    U32 data_time;
-    U16 param;
-    DATA_INFO_NODE* next;
-};
-
-typedef struct
-{
-    U32 data_time;
-    U16 param;
-    DATA_INFO_NODE* next;
-    U8 data;
-} U8_DATA_NODE;
-
-typedef struct
-{
-    U32 data_time;
-    U16 param;
-    DATA_INFO_NODE* next;
-    U16 data;
-} U16_DATA_NODE;
-
-typedef struct
-{
-    U32 data_time;
-    U16 param;
-    DATA_INFO_NODE* next;
-    U32 data;
-} U32_DATA_NODE;
-
-typedef struct
-{
-    U32 data_time;
-    U16 param;
-    DATA_INFO_NODE* next;
-    U64 data;
-} U64_DATA_NODE;
-
-typedef struct
-{
-    U32 data_time;
-    U16 param;
-    DATA_INFO_NODE* next;
-    S8 data;
-} S8_DATA_NODE;
-
-typedef struct
-{
-    U32 data_time;
-    U16 param;
-    DATA_INFO_NODE* next;
-    S16 data;
-} S16_DATA_NODE;
-
-typedef struct
-{
-    U32 data_time;
-    U16 param;
-    DATA_INFO_NODE* next;
-    S32 data;
-} S32_DATA_NODE;
-
-typedef struct
-{
-    U32 data_time;
-    U16 param;
-    DATA_INFO_NODE* next;
-    S64 data;
-} S64_DATA_NODE;
-
-typedef struct
-{
-    U32 data_time;
-    U16 param;
-    DATA_INFO_NODE* next;
-    float data;
-} FLOAT_DATA_NODE;
-
+// ping-pong buffer struct
+typedef struct PPBuff {
+	uint8_t* buffs[2]; // pointers to 2 byte buffers
+	uint8_t write; // index of the write buffer (0 or 1)
+	uint32_t fill; // fill level of the write buffer (in bytes)
+} PPBuff;
 
 #endif
 

@@ -8,32 +8,27 @@
 // functions for running the DLM in simulation mode
 
 #include <stdlib.h>
-#include "cmsis_os.h"
+#include "cmsis_os2.h"
 #include "base_types.h"
 #include "dlm-storage_structs.h"
-#include "dlm-mutex.h"
 #include "GopherCAN.h"
-
-DATA_INFO_NODE* ram_data_head;
-
-void sim_init(DATA_INFO_NODE* ram_ptr) {
-	ram_data_head = ram_ptr;
-}
-
+#include "dlm-error_handling.h"
+#include "dlm-high_level_functions.h"
+#include "main.h"
+#include "dlm-util.h"
 
 // #defines for configuring the frequency at which things are written
 #define DATA_GEN_FREQ_HZ 100
 #define NUM_CHANNELS 24
 #define FIRST_GCAN_ID (dam_chan_1.param_id)
 #define DATA_NODE_TYPE FLOAT_DATA_NODE
-
 #define DATA_GEN_MS_BETWEEN (1000/DATA_GEN_FREQ_HZ)
 
 
 // this function is called every 1ms, so keep that in mind when doing timings
-void sim_generate_data()
+void sim_generate_data(PPBuff* sd_buffer, PPBuff* telem_buffer)
 {
-    static U32 nodeCount = 0;
+    static U32 packet_count = 0;
     static U32 time_counter = 0;
     U32 time = HAL_GetTick();
 
@@ -41,59 +36,65 @@ void sim_generate_data()
     if (++time_counter >= DATA_GEN_MS_BETWEEN)
     {
     	time_counter = 0;
+    	DLM_ERRORS_t error;
 
 		// create data for each of the parameters required
 		for (U16 pid = FIRST_GCAN_ID; pid < FIRST_GCAN_ID + NUM_CHANNELS; pid++)
 		{
-			// create a data node.
-			DATA_NODE_TYPE* data_node = malloc(sizeof(DATA_NODE_TYPE));
-			if (data_node == NULL)
+			// append a fake packet to storage buffer
+			if (osMutexAcquire(mutex_storage_bufferHandle, MUTEX_GET_TIMEOUT_ms) != osOK)
 			{
-				// ran out of memory
-				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
+				set_error_state(DLM_ERR_MUTEX);
 				return;
 			}
-			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
-			data_node->data = nodeCount; // GCC should handle the implicit cast to whatever data type is required
+			error = append_packet(sd_buffer, STORAGE_BUFFER_SIZE, time, pid, &packet_count, sizeof(packet_count));
+			if (osMutexRelease(mutex_storage_bufferHandle) != osOK)
+			{
+				set_error_state(DLM_ERR_MUTEX);
+				return;
+			}
+			if (error != DLM_ERR_NO_ERR) {
+				set_error_state(error);
+				return;
+			}
 
-			DATA_INFO_NODE* node = (DATA_INFO_NODE*)data_node;
-			node->data_time = time;
-			node->param = pid;
-
-			// add the new node to the front of the list, after the head node
-			while (!get_mutex_lock(&ram_data_mutex)) osDelay(1);
-			taskENTER_CRITICAL();
-
-			node->next = ram_data_head->next;
-			ram_data_head->next = node;
-
-			taskEXIT_CRITICAL();
-			release_mutex(&ram_data_mutex);
+			// append the same fake packet to telemetry buffer
+			if (osMutexAcquire(mutex_broadcast_bufferHandle, MUTEX_GET_TIMEOUT_ms) != osOK)
+			{
+				set_error_state(DLM_ERR_MUTEX);
+				return;
+			}
+			error = append_packet(telem_buffer, BROADCAST_BUFFER_SIZE, time, pid, &packet_count, sizeof(packet_count));
+			if (osMutexRelease(mutex_broadcast_bufferHandle) != osOK)
+			{
+				set_error_state(DLM_ERR_MUTEX);
+				return;
+			}
+			if (error != DLM_ERR_NO_ERR) {
+				set_error_state(error);
+				return;
+			}
 		}
 
-		nodeCount++;
+		packet_count++;
     }
 }
 
-void sim_clear_ram() {
-	DATA_INFO_NODE* node = ram_data_head->next;
+void sim_swap_sd_buffer(PPBuff* sd_buffer)
+{
+	// get the mutex and ping pong the buffer
+	if (osMutexAcquire(mutex_storage_bufferHandle, MUTEX_GET_TIMEOUT_ms) != osOK)
+	{
+		set_error_state(DLM_ERR_MUTEX);
+		return;
+	}
 
-	// clear all nodes from the buffer
-	while (node != NULL) {
-		// get the mutex. It may not be needed for any nodes but the first data node after the head
-		while (!get_mutex_lock(&ram_data_mutex)) osDelay(1);
-		taskENTER_CRITICAL();
+	sd_buffer->fill = 0;
+	sd_buffer->write = !sd_buffer->write;
 
-		// remove the pointer from the LL
-		ram_data_head->next = node->next;
-
-		// free the memory for this node
-		free(node);
-
-		// move on to the next data node
-		node = ram_data_head->next;
-
-		taskEXIT_CRITICAL();
-		release_mutex(&ram_data_mutex);
+	if (osMutexRelease(mutex_storage_bufferHandle) != osOK)
+	{
+		set_error_state(DLM_ERR_MUTEX);
+		return;
 	}
 }

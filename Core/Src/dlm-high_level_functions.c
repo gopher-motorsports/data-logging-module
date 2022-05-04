@@ -19,7 +19,6 @@
 // self include
 #include "cmsis_os.h"
 #include "dlm-high_level_functions.h"
-#include "base_types.h"
 #include "GopherCAN.h"
 #include "dlm-storage_structs.h"
 #include "dlm-manage_data_aquisition.h"
@@ -27,15 +26,24 @@
 #include "dlm-manage_logging_session.h"
 #include "dlm-transmit_ram_data.h"
 #include "dlm-sim.h"
+#include "dlm-error_handling.h"
 
+// create the buffer for SD card data
+U8 storageBuff1[STORAGE_BUFFER_SIZE];
+U8 storageBuff2[STORAGE_BUFFER_SIZE];
+PPBuff sd_buffer = {
+		.buffs = {storageBuff1, storageBuff2},
+		.write = 0,
+		.fill = 0
+};
 
-// Global Variables
-// this is the head node for the RAM data linked list
-DATA_INFO_NODE ram_data =
-{
-		.data_time = 0,
-		.param = 0,
-		.next = NULL
+// create the buffer for telemetry data
+U8 broadcastBuff1[BROADCAST_BUFFER_SIZE];
+U8 broadcastBuff2[BROADCAST_BUFFER_SIZE];
+PPBuff telem_buffer = {
+		.buffs = {broadcastBuff1, broadcastBuff2},
+		.write = 0,
+		.fill = 0
 };
 
 // the HAL_CAN structs
@@ -43,26 +51,27 @@ CAN_HandleTypeDef* dlm_hcan1;
 CAN_HandleTypeDef* dlm_hcan2;
 CAN_HandleTypeDef* dlm_hcan3;
 
+UART_HandleTypeDef* dlm_huart;
+
 char dlm_file_name[MAX_FILENAME_SIZE];
 
 // variable to store the logging status
 LOGGING_STATUS logging_status = NOT_LOGGING;
-
-// DEBUG
 #include "GopherCAN.h"
-#include "main.h"
-static void change_led_state(U8 sender, void* parameter, U8 remote_param, U8 UNUSED1, U8 UNUSED2, U8 UNUSED3);
 
 // dlm_init
 //  This function will handle power-on behavior, all completely TBD
 //  according to everything else the module does
 void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2,
-		CAN_HandleTypeDef* hcan_ptr3)
+		CAN_HandleTypeDef* hcan_ptr3, UART_HandleTypeDef* huart, GPIO_TypeDef* error_port,
+		U16 error_pin, GPIO_TypeDef* sd_write_port, U16 sd_write_pin)
 {
     // init GopherCAN
 	dlm_hcan1 = hcan_ptr1;
 	dlm_hcan2 = hcan_ptr2;
 	dlm_hcan3 = hcan_ptr3;
+
+	dlm_huart = huart;
 
 	// initialize CAN
 	// NOTE: CAN will also need to be added in CubeMX and code must be generated
@@ -72,8 +81,18 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2,
 			|| init_can(dlm_hcan2, DLM_ID, BXTYPE_SLAVE)
 			|| init_can(dlm_hcan3, DLM_ID, BXTYPE_MASTER))
 	{
-		// an error has occurred, stay here TODO error handling
-		while (1);
+		// CAN failed to start. This is a critical error and the OS has not started yet, so do a
+		// blink right here and reset
+		for (U8 c = 0; c < DLM_ERR_INIT_FAIL; c++)
+		{
+			HAL_GPIO_WritePin(error_port, error_pin, SET);
+			HAL_Delay(ERR_BLINK_TIME);
+			HAL_GPIO_WritePin(error_port, error_pin, RESET);
+			HAL_Delay(ERR_BLINK_TIME);
+		}
+
+		HAL_Delay(ERR_WAIT_TIME);
+		NVIC_SystemReset();
 	}
 #endif
 
@@ -90,26 +109,15 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2,
 
 	// init the main tasks of the DLM
 	manage_logging_session_init(dlm_file_name);
-    manage_data_aquisition_init(&ram_data);
-    move_ram_data_to_storage_init(&ram_data, dlm_file_name);
-    transmit_ram_data_init(&ram_data);
-
-#ifdef SIMULATE_DATA_COLLECTION
-    sim_init(&ram_data);
-#endif
+    manage_data_aquisition_init();
+    move_ram_data_to_storage_init(dlm_file_name, sd_write_port, sd_write_pin);
+    transmit_data_init();
 
     // in REV1 we will start the logging session right away
     begin_logging_session();
 
-    // DEBUG testing all CAN buses
-    add_custom_can_func(SET_LED_STATE, &change_led_state, TRUE, NULL);
-}
-
-
-static void change_led_state(U8 sender, void* parameter, U8 remote_param, U8 UNUSED1, U8 UNUSED2, U8 UNUSED3)
-{
-	HAL_GPIO_WritePin(GPIOB, LED1_sd_write_Pin, !!remote_param);
-	return;
+	// start error handling
+	error_init(error_port, error_pin);
 }
 
 
@@ -123,16 +131,24 @@ static void change_led_state(U8 sender, void* parameter, U8 remote_param, U8 UNU
 //  request rate the DLM should support.
 void manage_data_aquisition()
 {
-	if (logging_status == LOGGING_ACTIVE)
+	while (TRUE)
 	{
-#ifndef SIMULATE_DATA_COLLECTION
-		request_all_buckets();
-    	store_new_data();
-#else
-        sim_generate_data();
-#endif
+		if (logging_status == LOGGING_ACTIVE)
+		{
+	#ifndef SIMULATE_DATA_COLLECTION
+			request_all_buckets();
+			// always flush the TX buffer after sending
+			service_can_tx_hardware(dlm_hcan1);
+			service_can_tx_hardware(dlm_hcan2);
+			service_can_tx_hardware(dlm_hcan3);
+
+			store_new_data(&sd_buffer, &telem_buffer);
+	#else
+			sim_generate_data(&sd_buffer, &telem_buffer);
+	#endif
+		}
+		osDelay(1);
 	}
-	osDelay(1);
 }
 
 
@@ -150,15 +166,31 @@ void manage_data_aquisition()
 //   - how many write cycles to the persistent storage we are ok giving up
 void move_ram_data_to_storage()
 {
-	if (logging_status == LOGGING_ACTIVE)
+	while (TRUE)
 	{
-#ifndef AUTO_CLEAR_DATA
-		osDelay(250); // TODO this is too fast. Fix when the logging scheme is fixed
-		write_data_and_handle_errors();
-#else
-		sim_clear_ram();
-		osDelay(10000);
-#endif
+		if (logging_status == LOGGING_ACTIVE)
+		{
+	#ifndef AUTO_CLEAR_DATA
+			osDelay(1); // The data write function controls when to actually write to the SD
+			write_data_and_handle_errors(&sd_buffer);
+	#else
+			sim_swap_sd_buffer(&sd_buffer);
+			osDelay(10000);
+	#endif
+		}
+	}
+}
+
+
+// handle_error_led
+//  This function will handle the status LED, hanging as it goes. Make sure
+//  nothing else is in this task that needs to be run faster
+void handle_error_led(void)
+{
+	while (TRUE)
+	{
+		run_led_task();
+		osDelay(LED_DELAY_TIME);
 	}
 }
 
@@ -171,10 +203,14 @@ void move_ram_data_to_storage()
 //  Arbitrarily every 1sec for now
 void transmit_ram_data()
 {
-	osDelay(2000);
-	if (logging_status == LOGGING_ACTIVE)
+	while (TRUE)
 	{
-		transmit_data(&huart7);
+		osThreadFlagsWait(FLAG_TRANSFER_DONE, osFlagsWaitAny, 0);
+		osDelay(1000);
+		if (logging_status == LOGGING_ACTIVE)
+		{
+			transmit_data(&telem_buffer, dlm_huart);
+		}
 	}
 }
 
@@ -245,27 +281,30 @@ void control_vehicle_systems()
 //  100us because we can
 void can_service_loop()
 {
-	// This is needed to account for a case where the RX buffer fills up, as the ISR is only
-	//  triggered directly on receiving the message
-	// if debugging and want to disable interrupts, uncomment these lines
-	//service_can_rx_hardware(dlm_hcan1, CAN_RX_FIFO0);
-	//service_can_rx_hardware(dlm_hcan1, CAN_RX_FIFO1);
-	//service_can_rx_hardware(dlm_hcan2, CAN_RX_FIFO0);
-	//service_can_rx_hardware(dlm_hcan2, CAN_RX_FIFO1);
-	//service_can_rx_hardware(dlm_hcan3, CAN_RX_FIFO0);
-	//service_can_rx_hardware(dlm_hcan3, CAN_RX_FIFO1);
-
-	// handle each RX message in the buffer
-	if (service_can_rx_buffer())
+	while(TRUE)
 	{
-		// an error has occurred
+		// This is needed to account for a case where the RX buffer fills up, as the ISR is only
+		//  triggered directly on receiving the message
+		// if debugging and want to disable interrupts, uncomment these lines
+		//service_can_rx_hardware(dlm_hcan1, CAN_RX_FIFO0);
+		//service_can_rx_hardware(dlm_hcan1, CAN_RX_FIFO1);
+		//service_can_rx_hardware(dlm_hcan2, CAN_RX_FIFO0);
+		//service_can_rx_hardware(dlm_hcan2, CAN_RX_FIFO1);
+		//service_can_rx_hardware(dlm_hcan3, CAN_RX_FIFO0);
+		//service_can_rx_hardware(dlm_hcan3, CAN_RX_FIFO1);
+
+		// handle each RX message in the buffer
+		if (service_can_rx_buffer())
+		{
+			set_error_state(DLM_ERR_CAN_ERR);
+		}
+
+		service_can_tx_hardware(dlm_hcan1);
+		service_can_tx_hardware(dlm_hcan2);
+		service_can_tx_hardware(dlm_hcan3);
+
+		osDelay(1);
 	}
-
-	service_can_tx_hardware(dlm_hcan1);
-	service_can_tx_hardware(dlm_hcan2);
-	service_can_tx_hardware(dlm_hcan3);
-
-	osDelay(1);
 }
 
 

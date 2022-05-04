@@ -10,8 +10,7 @@
 
 #include "dlm-storage_structs.h"
 
-void sim_init(DATA_INFO_NODE* ram_ptr);
-void sim_generate_data();
-void sim_clear_ram();
+void sim_generate_data(PPBuff* sd_buffer, PPBuff* telem_buffer);
+void sim_swap_sd_buffer(PPBuff* sd_buffer);
 
 #endif /* INC_DLM_SIM_H_ */
