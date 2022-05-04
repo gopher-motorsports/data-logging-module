@@ -137,6 +137,11 @@ void manage_data_aquisition()
 		{
 	#ifndef SIMULATE_DATA_COLLECTION
 			request_all_buckets();
+			// always flush the TX buffer after sending
+			service_can_tx_hardware(dlm_hcan1);
+			service_can_tx_hardware(dlm_hcan2);
+			service_can_tx_hardware(dlm_hcan3);
+
 			store_new_data(&sd_buffer, &telem_buffer);
 	#else
 			sim_generate_data(&sd_buffer, &telem_buffer);
