@@ -10,6 +10,13 @@
 
 #include "dlm-storage_structs.h"
 
+// #defines for configuring the frequency at which things are written
+#define DATA_GEN_FREQ_HZ 100
+#define NUM_CHANNELS 1
+#define FIRST_GCAN_ID (dam_chan_1.param_id)
+#define DATA_NODE_TYPE FLOAT_DATA_NODE
+#define DATA_GEN_MS_BETWEEN (1000/DATA_GEN_FREQ_HZ)
+
 void sim_generate_data(PPBuff* sd_buffer, PPBuff* telem_buffer);
 void sim_swap_sd_buffer(PPBuff* sd_buffer);
 

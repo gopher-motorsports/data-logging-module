@@ -7,6 +7,7 @@
 
 // functions for running the DLM in simulation mode
 
+#include "dlm-sim.h"
 #include <stdlib.h>
 #include "cmsis_os2.h"
 #include "base_types.h"
@@ -17,67 +18,62 @@
 #include "main.h"
 #include "dlm-util.h"
 
-// #defines for configuring the frequency at which things are written
-#define DATA_GEN_FREQ_HZ 100
-#define NUM_CHANNELS 24
-#define FIRST_GCAN_ID (dam_chan_1.param_id)
-#define DATA_NODE_TYPE FLOAT_DATA_NODE
-#define DATA_GEN_MS_BETWEEN (1000/DATA_GEN_FREQ_HZ)
-
-
 // this function is called every 1ms, so keep that in mind when doing timings
 void sim_generate_data(PPBuff* sd_buffer, PPBuff* telem_buffer)
 {
     static U32 packet_count = 0;
-    static U32 time_counter = 0;
-    U32 time = HAL_GetTick();
+    static U32 last_gen = 0;
 
     // check if it the right time to add data to the buffer
-    if (++time_counter >= DATA_GEN_MS_BETWEEN)
+    if (HAL_GetTick() - last_gen < DATA_GEN_MS_BETWEEN)
     {
-    	time_counter = 0;
-    	DLM_ERRORS_t error;
+    	return;
+    }
+	last_gen = HAL_GetTick();
 
-		// create data for each of the parameters required
-		for (U16 pid = FIRST_GCAN_ID; pid < FIRST_GCAN_ID + NUM_CHANNELS; pid++)
+	DLM_ERRORS_t error;
+
+	// create data for each of the parameters required
+	for (U16 pid = FIRST_GCAN_ID; pid < FIRST_GCAN_ID + NUM_CHANNELS; pid++)
+	{
+		U32 time = HAL_GetTick();
+
+		// append a fake packet to storage buffer
+		if (osMutexAcquire(mutex_storage_bufferHandle, MUTEX_GET_TIMEOUT_ms) != osOK)
 		{
-			// append a fake packet to storage buffer
-			if (osMutexAcquire(mutex_storage_bufferHandle, MUTEX_GET_TIMEOUT_ms) != osOK)
-			{
-				set_error_state(DLM_ERR_MUTEX);
-				return;
-			}
-			error = append_packet(sd_buffer, STORAGE_BUFFER_SIZE, time, pid, &packet_count, sizeof(packet_count));
-			if (osMutexRelease(mutex_storage_bufferHandle) != osOK)
-			{
-				set_error_state(DLM_ERR_MUTEX);
-				return;
-			}
-			if (error != DLM_ERR_NO_ERR) {
-				set_error_state(error);
-				return;
-			}
+			set_error_state(DLM_ERR_MUTEX);
+			return;
+		}
+		error = append_packet(sd_buffer, STORAGE_BUFFER_SIZE, time, pid, &packet_count, sizeof(packet_count));
+		if (osMutexRelease(mutex_storage_bufferHandle) != osOK)
+		{
+			set_error_state(DLM_ERR_MUTEX);
+			return;
+		}
+		if (error != DLM_ERR_NO_ERR) {
+			set_error_state(error);
+			return;
+		}
 
-			// append the same fake packet to telemetry buffer
-			if (osMutexAcquire(mutex_broadcast_bufferHandle, MUTEX_GET_TIMEOUT_ms) != osOK)
-			{
-				set_error_state(DLM_ERR_MUTEX);
-				return;
-			}
-			error = append_packet(telem_buffer, BROADCAST_BUFFER_SIZE, time, pid, &packet_count, sizeof(packet_count));
-			if (osMutexRelease(mutex_broadcast_bufferHandle) != osOK)
-			{
-				set_error_state(DLM_ERR_MUTEX);
-				return;
-			}
-			if (error != DLM_ERR_NO_ERR) {
-				set_error_state(error);
-				return;
-			}
+		// append the same fake packet to telemetry buffer
+		if (osMutexAcquire(mutex_broadcast_bufferHandle, MUTEX_GET_TIMEOUT_ms) != osOK)
+		{
+			set_error_state(DLM_ERR_MUTEX);
+			return;
+		}
+		error = append_packet(telem_buffer, BROADCAST_BUFFER_SIZE, time, pid, &packet_count, sizeof(packet_count));
+		if (osMutexRelease(mutex_broadcast_bufferHandle) != osOK)
+		{
+			set_error_state(DLM_ERR_MUTEX);
+			return;
+		}
+		if (error != DLM_ERR_NO_ERR) {
+			set_error_state(error);
+			return;
 		}
 
 		packet_count++;
-    }
+	}
 }
 
 void sim_swap_sd_buffer(PPBuff* sd_buffer)
