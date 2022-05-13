@@ -6,67 +6,51 @@
  */
 
 #include "dlm-util.h"
+#include <string.h>
 
-DLM_ERRORS_t append_packet(PPBuff* buffer, U32 bufferSize, U32 timestamp,
-								  U16 id, void* data, U8 dataSize)
-{
-	// calculate the packet size and available buffer space. We will assume each each
-	// character is an escape byte to make sure we never write to far
-	U8 packetSize = (1 + sizeof(timestamp) + sizeof(id) + dataSize) * 2;
-	U32 freeSpace = bufferSize - buffer->fill;
-	if (packetSize > freeSpace)
-	{
-		// this packet won't fit
+DLM_ERRORS_t append_packet(PPBuff* buffer, U32 buffer_size, U32 timestamp, U16 id, void* data, U8 data_size) {
+	U32 free_space = buffer_size - buffer->fill;
+	if (MAX_PACKET_SIZE > free_space) {
+		// this packet might not fit
 		return DLM_ERR_RAM_FAIL;
 	}
 
-	// find the write buffer based on the buffer not being read from
-	U8* buff = buffer->buffs[buffer->write];
-    U8 i;
-    U8* bytes;
+	U8 packet[MAX_PACKET_SIZE] = {0};
+	U8 packet_fill = 0;
 
-    // insert start byte
-    buff[buffer->fill++] = START_BYTE;
+	packet[packet_fill++] = START_BYTE;
+	packet_fill = append_value(packet, packet_fill, &timestamp, sizeof(timestamp));
+	packet_fill = append_value(packet, packet_fill, &id, sizeof(id));
+	packet_fill = append_value(packet, packet_fill, data, data_size);
 
-    // append components with MSB first
-    bytes = (U8*) &(timestamp);
-    for (i = sizeof(timestamp); i > 0; i--)
-    {
-        append_byte(buffer, bytes[i - 1]);
-    }
+	// math trick to get the minimum packet size that's a multiple of 8
+	U8 packet_size = ((packet_fill - 1) | 7) + 1;
 
-    bytes = (U8*) &(id);
-    for (i = sizeof(id); i > 0; i--)
-    {
-		append_byte(buffer, bytes[i - 1]);
-	}
+	// copy this packet to the write buffer
+	memcpy(&buffer->buffs[buffer->write][buffer->fill], packet, packet_size);
+	buffer->fill += packet_size;
 
-    bytes = (U8*) data;
-    for (i = dataSize; i > 0; i--)
-    {
-		append_byte(buffer, bytes[i - 1]);
-	}
-
-    // success
-    return DLM_ERR_NO_ERR;
+	// success
+	return DLM_ERR_NO_ERR;
 }
 
-void append_byte(PPBuff* buffer, U8 byte)
-{
-	// find the write buffer
-	U8* buff = buffer->buffs[buffer->write];
+U8 append_value(U8 packet[], U8 fill, void* value, U8 size) {
+	// append the value byte-by-byte (big endian)
+	U8 i;
+	U8* bytes = (U8*) value;
+	for (i = size; i > 0; i--) {
+		U8 byte = bytes[i - 1];
+		// check for a control byte
+		if (byte == START_BYTE || byte == ESCAPE_BYTE) {
+			// append an escape byte
+			packet[fill++] = ESCAPE_BYTE;
+			// append the desired byte, escaped
+			packet[fill++] = byte ^ 0x20;
+		} else {
+			// append the raw byte
+			packet[fill++] = byte;
+		}
+	}
 
-    // check for a control byte
-    if (byte == START_BYTE || byte == ESCAPE_BYTE)
-    {
-        // append an escape byte
-    	buff[buffer->fill++] = ESCAPE_BYTE;
-        // append the desired byte, escaped
-    	buff[buffer->fill++] = byte ^ ESCAPE_XOR;
-    }
-    else
-    {
-    	// append the raw byte
-    	buff[buffer->fill++] = byte;
-    }
+	return fill;
 }
