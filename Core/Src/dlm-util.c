@@ -23,8 +23,10 @@ DLM_ERRORS_t append_packet(PPBuff* buffer, U32 buffer_size, U32 timestamp, U16 i
 	packet_fill = append_value(packet, packet_fill, &id, sizeof(id));
 	packet_fill = append_value(packet, packet_fill, data, data_size);
 
-	// math trick to get the minimum packet size that's a multiple of 8
-	U8 packet_size = ((packet_fill - 1) | 7) + 1;
+	// minimize packet size
+	uint8_t packet_size = MAX_PACKET_SIZE;
+	if (packet_fill <= 16) packet_size = 16;
+	else if (packet_fill <= 24) packet_size = 24;
 
 	// copy this packet to the write buffer
 	memcpy(&buffer->buffs[buffer->write][buffer->fill], packet, packet_size);
