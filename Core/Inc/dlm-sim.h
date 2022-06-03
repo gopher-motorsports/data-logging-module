@@ -13,7 +13,9 @@
 // #defines for configuring the frequency at which things are written
 #define DATA_GEN_FREQ_HZ 100
 #define NUM_CHANNELS 1
-#define FIRST_GCAN_ID (dam_chan_1.param_id)
+// TODO: something broke this
+//#define FIRST_GCAN_ID (dam_chan_1.param_id)
+#define FIRST_GCAN_ID 1
 #define DATA_NODE_TYPE FLOAT_DATA_NODE
 #define DATA_GEN_MS_BETWEEN (1000/DATA_GEN_FREQ_HZ)
 
