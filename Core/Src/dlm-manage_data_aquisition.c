@@ -307,7 +307,7 @@ DLM_ERRORS_t add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket
     // TX delay than RX delay
     if (osMutexAcquire(mutex_storage_bufferHandle,
     				   MUTEX_GET_TIMEOUT_ms) != osOK) return DLM_ERR_MUTEX;
-    error = append_packet(sd_buffer, STORAGE_BUFFER_SIZE, bucket_node->bucket.last_request,
+    error = append_packet(sd_buffer, STORAGE_BUFFER_SIZE, can_param_struct->last_rx,
 		      param_info->parameter, data_ptr, data_size);
     if (osMutexRelease(mutex_storage_bufferHandle) != osOK) return DLM_ERR_MUTEX;
     if (error != DLM_ERR_NO_ERR) return error;
@@ -316,7 +316,7 @@ DLM_ERRORS_t add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket
 	// TODO: only append whitelisted packets to telem buffer
 	if (osMutexAcquire(mutex_broadcast_bufferHandle,
 					   MUTEX_GET_TIMEOUT_ms) != osOK) return DLM_ERR_MUTEX;
-	error = append_packet(telem_buffer, BROADCAST_BUFFER_SIZE, bucket_node->bucket.last_request,
+	error = append_packet(telem_buffer, BROADCAST_BUFFER_SIZE, can_param_struct->last_rx,
 				  param_info->parameter, data_ptr, data_size);
 	if (osMutexRelease(mutex_broadcast_bufferHandle) != osOK) return DLM_ERR_MUTEX;
 	if (error != DLM_ERR_NO_ERR) return error;
