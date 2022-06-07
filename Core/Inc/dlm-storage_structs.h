@@ -20,8 +20,6 @@ typedef union
 typedef struct
 {
 	U16 parameter;
-	// BETTER_BUCKETS
-//	U8 pending_responce;
 	U32 last_log;
 } BUCKET_PARAM_INFO;
 

@@ -136,8 +136,6 @@ void manage_data_aquisition()
 		if (logging_status == LOGGING_ACTIVE)
 		{
 	#ifndef SIMULATE_DATA_COLLECTION
-			// BETTER_BUCKETS
-//			request_all_buckets();
 			// always flush the TX buffer after sending
 			service_can_tx_hardware(dlm_hcan1);
 			service_can_tx_hardware(dlm_hcan2);
