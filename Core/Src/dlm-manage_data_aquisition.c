@@ -91,10 +91,6 @@ void set_bucket_size(U8 sending_dam, void* UNUSED,
         bucket_node->bucket.dam_id = sending_dam;
         bucket_node->bucket.bucket_id = bucket_id;
 
-        // Disable this bucket by setting the ms_between_requests to 0
-        bucket_node->bucket.ms_between_requests = 0;
-        bucket_node->bucket.last_request = 0;
-
         // set the above node to this new node
         above_bucket_node->next = bucket_node;
     }
