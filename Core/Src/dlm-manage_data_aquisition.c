@@ -206,8 +206,7 @@ void store_new_data(PPBuff* sd_buffer, PPBuff* telem_buffer)
     CAN_INFO_STRUCT* param_info;
     U8 c;
 
-    // For each parameter in each bucket, check if the last time it was
-    // received is sooner than its bucket was requested and has not been already written
+    // step through all buckets
     while (bucket_node != NULL)
     {
         param_array = bucket_node->bucket.param_ids;
@@ -218,7 +217,7 @@ void store_new_data(PPBuff* sd_buffer, PPBuff* telem_buffer)
             // get the CAN_INFO_STRUCT related to this parameter. Data stores the parameter ID in the node struct
             param_info = (CAN_INFO_STRUCT*)(all_parameter_structs[param_array->parameter]);
 
-            // check if this param was received again after the last time it was recorded
+            // check if this param was received again since the last time it was logged
             if (param_info->last_rx > param_array[c].last_log)
             {
                 // add the param data to RAM
@@ -231,11 +230,6 @@ void store_new_data(PPBuff* sd_buffer, PPBuff* telem_buffer)
 
                 // successfully added the data point to ram
                 clear_error_state(DLM_ERR_RAM_FAIL);
-
-                // the pending_responce flag is being hijacked for saving whether
-				// this data point has been logged
-				param_info->pending_response = TRUE;
-
 				param_array[c].last_log = HAL_GetTick();
             }
 
@@ -246,6 +240,8 @@ void store_new_data(PPBuff* sd_buffer, PPBuff* telem_buffer)
         // move on to the next bucket
         bucket_node = bucket_node->next;
     }
+
+    // TODO: send heartbeat
 }
 
 
