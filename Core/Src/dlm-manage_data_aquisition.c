@@ -18,7 +18,7 @@
 //  A linked list is a good canidate for storing all of the buckets because they will need
 //  to be squentially run through in order to send the correct request, and the DLM
 //  must be able to handle a general amount of them.
-BUCKET_NODE bucket_list_head = {{0, 0, 0, 0, 0, 0, NULL}, NULL};
+BUCKET_NODE bucket_list_head = {{0, 0, 0, 0, NULL}, NULL};
 
 
 // manage_data_aquisition_init
@@ -237,7 +237,8 @@ void store_new_data(PPBuff* sd_buffer, PPBuff* telem_buffer)
         bucket_node = bucket_node->next;
     }
 
-    // TODO: send heartbeat
+    // proof of life
+    send_can_command(PRIO_HIGH, ALL_MODULES_ID, LOG_COMPLETE, 0, 0, 0, 0);
 }
 
 
