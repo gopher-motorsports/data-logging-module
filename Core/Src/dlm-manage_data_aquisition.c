@@ -236,9 +236,6 @@ void store_new_data(PPBuff* sd_buffer, PPBuff* telem_buffer)
         // move on to the next bucket
         bucket_node = bucket_node->next;
     }
-
-    // proof of life
-    send_can_command(PRIO_HIGH, ALL_MODULES_ID, LOG_COMPLETE, 0, 0, 0, 0);
 }
 
 
