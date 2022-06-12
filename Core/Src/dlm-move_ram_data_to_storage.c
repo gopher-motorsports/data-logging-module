@@ -129,6 +129,8 @@ void write_data_and_handle_errors(PPBuff* sd_buffer)
 
 		// toggle the SD LED to signal a successful write
 		if (sd_led_port) HAL_GPIO_TogglePin(sd_led_port, sd_led_pin);
+		// message to indicate the DLM is working
+		send_can_command(PRIO_HIGH, ALL_MODULES_ID, LOG_COMPLETE, 0, 0, 0, 0);
 		error_counter = 0;
 		return;
 

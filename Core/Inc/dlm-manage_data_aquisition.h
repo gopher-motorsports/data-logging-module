@@ -17,9 +17,6 @@ void set_bucket_size(U8 sending_dam, void* UNUSED,
     U8 bucket_id, U8 num_of_params, U8 UNUSED2, U8 UNUSED3);
 void add_param_to_bucket(U8 sending_dam, void* UNUSED,
 	U8 bucket_id, U8 param_id_msb, U8 param_id_lsb, U8 UNUSED3);
-void assign_bucket_to_frq(U8 sending_dam, void* UNUSED,
-    U8 bucket_id, U8 ms_between_requests_msb, U8 ms_between_requests_lsb, U8 UNUSED3);
-void request_all_buckets(void);
 void store_new_data(PPBuff* sd_buffer, PPBuff* telem_buffer);
 DLM_ERRORS_t add_param_to_ram(BUCKET_PARAM_INFO* param_info, BUCKET_NODE* bucket_node,
 									 PPBuff* sd_buffer, PPBuff* telem_buffer);
