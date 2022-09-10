@@ -98,8 +98,11 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2,
 
 	// Declare which bus is which using define_can_bus
 	define_can_bus(dlm_hcan1, GCAN0, 0);
-	define_can_bus(dlm_hcan2, GCAN1, 1);
-	define_can_bus(dlm_hcan3, GCAN2, 2);
+	//define_can_bus(dlm_hcan2, GCAN1, 1);
+	//define_can_bus(dlm_hcan3, GCAN2, 2);
+	// TODO swapped for the current car
+	 define_can_bus(dlm_hcan3, GCAN1, 1);
+	 define_can_bus(dlm_hcan2, GCAN2, 2);
 
 	// enable the tester variables
 	set_all_params_state(TRUE);
@@ -140,7 +143,6 @@ void manage_data_aquisition()
 			service_can_tx_hardware(dlm_hcan1);
 			service_can_tx_hardware(dlm_hcan2);
 			service_can_tx_hardware(dlm_hcan3);
-
 			store_new_data(&sd_buffer, &telem_buffer);
 	#else
 			sim_generate_data(&sd_buffer, &telem_buffer);

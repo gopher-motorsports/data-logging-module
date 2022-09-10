@@ -211,13 +211,20 @@ void store_new_data(PPBuff* sd_buffer, PPBuff* telem_buffer)
         for (c = 0; c < bucket_node->bucket.params_added; c++)
         {
             // get the CAN_INFO_STRUCT related to this parameter. Data stores the parameter ID in the node struct
-            param_info = (CAN_INFO_STRUCT*)(all_parameter_structs[param_array->parameter]);
+            param_info = (CAN_INFO_STRUCT*)(all_parameter_structs[param_array[c].parameter]);
+
+            // DEBUG
+            volatile GCAN_PARAM_ID temp = WSRL_ECU_ID;
+            if (param_info->param_id == temp)
+            {
+            	temp = temp + 1;
+            }
 
             // check if this param was received again since the last time it was logged
             if (param_info->last_rx > param_array[c].last_log)
             {
                 // add the param data to RAM
-            	DLM_ERRORS_t error = add_param_to_ram(param_array, bucket_node, sd_buffer, telem_buffer);
+            	DLM_ERRORS_t error = add_param_to_ram(&param_array[c], bucket_node, sd_buffer, telem_buffer);
                 if (error != DLM_ERR_NO_ERR)
                 {
                 	set_error_state(error);
@@ -228,9 +235,6 @@ void store_new_data(PPBuff* sd_buffer, PPBuff* telem_buffer)
                 clear_error_state(DLM_ERR_RAM_FAIL);
 				param_array[c].last_log = HAL_GetTick();
             }
-
-            // move on to the next parameter
-            param_array++;
         }
         
         // move on to the next bucket
