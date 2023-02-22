@@ -23,6 +23,7 @@
 #include "stm32f7xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "dlm-error_handling.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -99,6 +100,17 @@ void HardFault_Handler(void)
   while (1)
   {
     /* USER CODE BEGIN W1_HardFault_IRQn 0 */
+	  // give a blink code to note it failed to init, then reset
+	  for (U8 c = 0; c < DLM_ERR_INIT_FAIL; c++)
+	  {
+			HAL_GPIO_WritePin(GPIOB, Err_LED_Pin, SET);
+			HAL_Delay(ERR_BLINK_TIME);
+			HAL_GPIO_WritePin(GPIOB, Err_LED_Pin, RESET);
+			HAL_Delay(ERR_BLINK_TIME);
+		}
+
+		HAL_Delay(ERR_WAIT_TIME);
+		NVIC_SystemReset();
     /* USER CODE END W1_HardFault_IRQn 0 */
   }
 }

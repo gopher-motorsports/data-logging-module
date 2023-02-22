@@ -77,9 +77,9 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2,
 	// NOTE: CAN will also need to be added in CubeMX and code must be generated
 	// Check the STM_CAN repo for the file "Fxxx CAN Config Settings.pptx" for the correct settings
 #ifndef SIMULATE_DATA_COLLECTION
-	if (init_can(dlm_hcan1, DLM_ID, BXTYPE_MASTER)
-			|| init_can(dlm_hcan2, DLM_ID, BXTYPE_SLAVE)
-			|| init_can(dlm_hcan3, DLM_ID, BXTYPE_MASTER))
+	if (init_can(GCAN0, dlm_hcan1, DLM_ID, BXTYPE_MASTER)
+			|| init_can(GCAN1, dlm_hcan2, DLM_ID, BXTYPE_SLAVE)
+			|| init_can(GCAN2, dlm_hcan3, DLM_ID, BXTYPE_MASTER))
 	{
 		// CAN failed to start. This is a critical error and the OS has not started yet, so do a
 		// blink right here and reset
@@ -96,28 +96,16 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2,
 	}
 #endif
 
-	// Declare which bus is which using define_can_bus
-	define_can_bus(dlm_hcan1, GCAN0, 0);
-	//define_can_bus(dlm_hcan2, GCAN1, 1);
-	//define_can_bus(dlm_hcan3, GCAN2, 2);
-	// TODO swapped for the current car
-	 define_can_bus(dlm_hcan3, GCAN1, 1);
-	 define_can_bus(dlm_hcan2, GCAN2, 2);
-
-	// enable the tester variables
-	set_all_params_state(TRUE);
-
 	// use the RTC to generate the filename
 	generate_filename(dlm_file_name);
 
 	// init the main tasks of the DLM
 	manage_logging_session_init(dlm_file_name);
-    manage_data_aquisition_init();
     move_ram_data_to_storage_init(dlm_file_name, sd_write_port, sd_write_pin);
     transmit_data_init();
 
     // in REV1 we will start the logging session right away
-    begin_logging_session();
+    logging_status = LOGGING_ACTIVE;
 
 	// start error handling
 	error_init(error_port, error_pin);
@@ -139,10 +127,11 @@ void manage_data_aquisition()
 		if (logging_status == LOGGING_ACTIVE)
 		{
 	#ifndef SIMULATE_DATA_COLLECTION
-			// always flush the TX buffer after sending
-			service_can_tx_hardware(dlm_hcan1);
-			service_can_tx_hardware(dlm_hcan2);
-			service_can_tx_hardware(dlm_hcan3);
+			// Always get the new messages from the RX buffer before servicing
+			if (service_can_rx_buffer())
+			{
+				set_error_state(DLM_ERR_CAN_ERR);
+			}
 			store_new_data(&sd_buffer, &telem_buffer);
 	#else
 			sim_generate_data(&sd_buffer, &telem_buffer);
@@ -216,62 +205,6 @@ void transmit_ram_data()
 }
 
 
-// begin_logging_session
-//  This function will be called at the beginning of each logging session,
-//  and will create a new file on the persistent storage with the correct name
-//  for that run. Name will store the date and time of the beginning of the
-//  logging session
-//
-// Call FRQ:
-//  at the beginning of each logging session
-void begin_logging_session()
-{
-	logging_status = LOGGING_ACTIVE;
-}
-
-
-// end_logging_session
-//  This function will get all of the data off the RAM and into persistent
-//  storage (call move_ram_data_to_storage()) one more time, then complete
-//  and close the data storage file, and finally get the module ready to
-//  begin a new logging session
-//
-// Call FRQ:
-//  at the end of each logging session
-void end_logging_session()
-{
-    // TODO
-}
-
-
-// offload_data
-//  This function will take data off of the persistent storage and send it
-//  to a PC in some way (possibly Ethernet). How to begin this process, how
-//  to choose a file to offload, and how to actually accomplish the offloading
-//  is still very TBD
-//
-// Call FRQ:
-//  When activated, how that will happen is TBD
-void offload_data()
-{
-    // TODO
-}
-
-
-// control_vehicle_systems
-//  This function will do things (TBD) based on the fault states of other modules
-//  as handled by the GopherCAN fault parameters for each module. Also will look at the
-//  last time the Module returned a CAN request (look at last_rx of the fault parameter)
-//  and possibly send a CAN command to the PDM to tell it to restart that module
-//
-// Call FRQ:
-//  Prob 10ms-50ms, depending on how often we want fault parameters
-void control_vehicle_systems()
-{
-    // TODO
-}
-
-
 // can_service_loop
 //  This will perform all of the CAN servicing actions required for GopherCAN,
 //  including servicing TX and RX hardware/buffers. Should be called more frequently
@@ -300,9 +233,9 @@ void can_service_loop()
 			set_error_state(DLM_ERR_CAN_ERR);
 		}
 
-		service_can_tx_hardware(dlm_hcan1);
-		service_can_tx_hardware(dlm_hcan2);
-		service_can_tx_hardware(dlm_hcan3);
+		service_can_tx(dlm_hcan1);
+		service_can_tx(dlm_hcan2);
+		service_can_tx(dlm_hcan3);
 
 		osDelay(1);
 	}

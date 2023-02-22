@@ -47,6 +47,8 @@ DLM_ERRORS_t append_packet(PPBuff* buffer, U32 bufferSize, U32 timestamp,
 		append_byte(buffer, bytes[i - 1]);
 	}
 
+    // TODO need to add a checksum at the end
+
     // success
     return DLM_ERR_NO_ERR;
 }
