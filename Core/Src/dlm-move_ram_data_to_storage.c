@@ -189,7 +189,8 @@ static SD_WRITE_ERR_t write_data_to_storage(PPBuff* sd_buffer)
 
 	if (transferSize != bytes_written)
 	{
-		// TODO better error handling, possibly keep attempting to write the rest
+		// TODO better error handling, possibly keep attempting to
+		// write the rest
 		return FILE_ERROR;
 	}
 

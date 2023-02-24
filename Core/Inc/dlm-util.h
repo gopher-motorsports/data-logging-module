@@ -22,6 +22,5 @@
 #define DLM_SUCCESS 0
 
 DLM_ERRORS_t append_packet(PPBuff* buffer, U32 bufferSize, U32 timestamp, U16 id, void* data, U8 dataSize);
-void append_byte(PPBuff* buffer, U8 byte);
 
 #endif /* INC_DLM_UTIL_H_ */

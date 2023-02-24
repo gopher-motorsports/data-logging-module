@@ -64,7 +64,7 @@ DLM_ERRORS_t add_param_to_ram(CAN_INFO_STRUCT* param, PPBuff* sd_buffer,
     DLM_ERRORS_t error;
     void* data_ptr;
     // get the size of the parameter based on the data type
-    switch (param->ID)
+    switch (param->TYPE)
 	{
 	case UNSIGNED8:
 		data_size = sizeof(U8);
