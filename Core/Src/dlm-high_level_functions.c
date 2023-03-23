@@ -195,7 +195,6 @@ void transmit_ram_data()
 {
 	while (TRUE)
 	{
-		osThreadFlagsWait(FLAG_TRANSFER_DONE, osFlagsWaitAny, 0);
 		osDelay(1000);
 		if (logging_status == LOGGING_ACTIVE)
 		{

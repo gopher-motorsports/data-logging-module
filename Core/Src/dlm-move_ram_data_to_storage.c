@@ -173,7 +173,7 @@ static SD_WRITE_ERR_t write_data_to_storage(PPBuff* sd_buffer)
 	UINT bytes_written; // UINT for the compiler to be happy with fatfs
 
 	// we only need to get the mutex when we ping pong the buffer
-	if (osMutexAcquire(mutex_storage_bufferHandle,
+	if (osMutexWait(mutex_storage_bufferHandle,
 			SD_MUTEX_GET_TIMEOUT_ms) != osOK) return MUTEX_ERROR;
 	// ping-pong the storage buffer
 	U32 transferSize = sd_buffer->fill;

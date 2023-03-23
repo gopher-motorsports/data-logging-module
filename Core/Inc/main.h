@@ -33,7 +33,7 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-#include "cmsis_os2.h"
+#include "cmsis_os.h"
 
 /* USER CODE END Includes */
 
@@ -44,9 +44,8 @@ extern "C" {
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-extern osMutexId_t mutex_broadcast_bufferHandle;
-extern osMutexId_t mutex_storage_bufferHandle;
-extern osThreadId_t transmit_ram_Handle;
+extern osMutexId mutex_broadcast_bufferHandle;
+extern osMutexId mutex_storage_bufferHandle;
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/

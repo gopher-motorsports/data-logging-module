@@ -109,7 +109,7 @@ DLM_ERRORS_t add_param_to_ram(CAN_INFO_STRUCT* param, PPBuff* sd_buffer,
 
     // set the time the data was taken as the time is was requested, as there is less
     // TX delay than RX delay
-    if (osMutexAcquire(mutex_storage_bufferHandle,
+    if (osMutexWait(mutex_storage_bufferHandle,
     				   MUTEX_GET_TIMEOUT_ms) != osOK) return DLM_ERR_MUTEX;
     error = append_packet(sd_buffer, STORAGE_BUFFER_SIZE, param->last_rx,
 		      (U16)param->ID, data_ptr, data_size);
@@ -118,7 +118,7 @@ DLM_ERRORS_t add_param_to_ram(CAN_INFO_STRUCT* param, PPBuff* sd_buffer,
 
 
 	// TODO: only append whitelisted packets to telem buffer
-	if (osMutexAcquire(mutex_broadcast_bufferHandle,
+	if (osMutexWait(mutex_broadcast_bufferHandle,
 					   MUTEX_GET_TIMEOUT_ms) != osOK) return DLM_ERR_MUTEX;
 	error = append_packet(telem_buffer, BROADCAST_BUFFER_SIZE, param->last_rx,
 				(U16)param->ID, data_ptr, data_size);

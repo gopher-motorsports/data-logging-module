@@ -9,7 +9,7 @@
 
 #include "dlm-sim.h"
 #include <stdlib.h>
-#include "cmsis_os2.h"
+#include "cmsis_os.h"
 #include "base_types.h"
 #include "dlm-storage_structs.h"
 #include "GopherCAN.h"
@@ -39,7 +39,7 @@ void sim_generate_data(PPBuff* sd_buffer, PPBuff* telem_buffer)
 		U32 time = HAL_GetTick();
 
 		// append a fake packet to storage buffer
-		if (osMutexAcquire(mutex_storage_bufferHandle, MUTEX_GET_TIMEOUT_ms) != osOK)
+		if (osMutexWait(mutex_storage_bufferHandle, MUTEX_GET_TIMEOUT_ms) != osOK)
 		{
 			set_error_state(DLM_ERR_MUTEX);
 			return;
@@ -56,7 +56,7 @@ void sim_generate_data(PPBuff* sd_buffer, PPBuff* telem_buffer)
 		}
 
 		// append the same fake packet to telemetry buffer
-		if (osMutexAcquire(mutex_broadcast_bufferHandle, MUTEX_GET_TIMEOUT_ms) != osOK)
+		if (osMutexWait(mutex_broadcast_bufferHandle, MUTEX_GET_TIMEOUT_ms) != osOK)
 		{
 			set_error_state(DLM_ERR_MUTEX);
 			return;
@@ -79,7 +79,7 @@ void sim_generate_data(PPBuff* sd_buffer, PPBuff* telem_buffer)
 void sim_swap_sd_buffer(PPBuff* sd_buffer)
 {
 	// get the mutex and ping pong the buffer
-	if (osMutexAcquire(mutex_storage_bufferHandle, MUTEX_GET_TIMEOUT_ms) != osOK)
+	if (osMutexWait(mutex_storage_bufferHandle, MUTEX_GET_TIMEOUT_ms) != osOK)
 	{
 		set_error_state(DLM_ERR_MUTEX);
 		return;

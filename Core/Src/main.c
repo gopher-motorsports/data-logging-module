@@ -56,51 +56,13 @@ DMA_HandleTypeDef hdma_sdmmc1_rx;
 UART_HandleTypeDef huart7;
 DMA_HandleTypeDef hdma_uart7_tx;
 
-/* Definitions for can_loop_task */
-osThreadId_t can_loop_taskHandle;
-const osThreadAttr_t can_loop_task_attributes = {
-  .name = "can_loop_task",
-  .stack_size = 1024 * 4,
-  .priority = (osPriority_t) osPriorityHigh,
-};
-/* Definitions for dlm_manage_data */
-osThreadId_t dlm_manage_dataHandle;
-const osThreadAttr_t dlm_manage_data_attributes = {
-  .name = "dlm_manage_data",
-  .stack_size = 1024 * 4,
-  .priority = (osPriority_t) osPriorityAboveNormal,
-};
-/* Definitions for move_ram_to_sd_ */
-osThreadId_t move_ram_to_sd_Handle;
-const osThreadAttr_t move_ram_to_sd__attributes = {
-  .name = "move_ram_to_sd_",
-  .stack_size = 2048 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
-};
-/* Definitions for transmit_ram_ */
-osThreadId_t transmit_ram_Handle;
-const osThreadAttr_t transmit_ram__attributes = {
-  .name = "transmit_ram_",
-  .stack_size = 2048 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
-};
-/* Definitions for LED_Task */
-osThreadId_t LED_TaskHandle;
-const osThreadAttr_t LED_Task_attributes = {
-  .name = "LED_Task",
-  .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityBelowNormal,
-};
-/* Definitions for mutex_broadcast_buffer */
-osMutexId_t mutex_broadcast_bufferHandle;
-const osMutexAttr_t mutex_broadcast_buffer_attributes = {
-  .name = "mutex_broadcast_buffer"
-};
-/* Definitions for mutex_storage_buffer */
-osMutexId_t mutex_storage_bufferHandle;
-const osMutexAttr_t mutex_storage_buffer_attributes = {
-  .name = "mutex_storage_buffer"
-};
+osThreadId can_loop_taskHandle;
+osThreadId dlm_manage_dataHandle;
+osThreadId move_ram_to_sd_Handle;
+osThreadId transmit_ram_Handle;
+osThreadId LED_TaskHandle;
+osMutexId mutex_broadcast_bufferHandle;
+osMutexId mutex_storage_bufferHandle;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -115,11 +77,11 @@ static void MX_SDMMC1_SD_Init(void);
 static void MX_RTC_Init(void);
 static void MX_CAN3_Init(void);
 static void MX_UART7_Init(void);
-void can_loop(void *argument);
-void dlm_main(void *argument);
-void move_ram_to_sd(void *argument);
-void transmit_ram(void *argument);
-void err_led_task(void *argument);
+void can_loop(void const * argument);
+void dlm_main(void const * argument);
+void move_ram_to_sd(void const * argument);
+void transmit_ram(void const * argument);
+void err_led_task(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -172,14 +134,14 @@ int main(void)
 
   /* USER CODE END 2 */
 
-  /* Init scheduler */
-  osKernelInitialize();
   /* Create the mutex(es) */
-  /* creation of mutex_broadcast_buffer */
-  mutex_broadcast_bufferHandle = osMutexNew(&mutex_broadcast_buffer_attributes);
+  /* definition and creation of mutex_broadcast_buffer */
+  osMutexDef(mutex_broadcast_buffer);
+  mutex_broadcast_bufferHandle = osMutexCreate(osMutex(mutex_broadcast_buffer));
 
-  /* creation of mutex_storage_buffer */
-  mutex_storage_bufferHandle = osMutexNew(&mutex_storage_buffer_attributes);
+  /* definition and creation of mutex_storage_buffer */
+  osMutexDef(mutex_storage_buffer);
+  mutex_storage_bufferHandle = osMutexCreate(osMutex(mutex_storage_buffer));
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -198,29 +160,30 @@ int main(void)
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* creation of can_loop_task */
-  can_loop_taskHandle = osThreadNew(can_loop, NULL, &can_loop_task_attributes);
+  /* definition and creation of can_loop_task */
+  osThreadDef(can_loop_task, can_loop, osPriorityHigh, 0, 1024);
+  can_loop_taskHandle = osThreadCreate(osThread(can_loop_task), NULL);
 
-  /* creation of dlm_manage_data */
-  dlm_manage_dataHandle = osThreadNew(dlm_main, NULL, &dlm_manage_data_attributes);
+  /* definition and creation of dlm_manage_data */
+  osThreadDef(dlm_manage_data, dlm_main, osPriorityAboveNormal, 0, 1024);
+  dlm_manage_dataHandle = osThreadCreate(osThread(dlm_manage_data), NULL);
 
-  /* creation of move_ram_to_sd_ */
-  move_ram_to_sd_Handle = osThreadNew(move_ram_to_sd, NULL, &move_ram_to_sd__attributes);
+  /* definition and creation of move_ram_to_sd_ */
+  osThreadDef(move_ram_to_sd_, move_ram_to_sd, osPriorityNormal, 0, 2048);
+  move_ram_to_sd_Handle = osThreadCreate(osThread(move_ram_to_sd_), NULL);
 
-  /* creation of transmit_ram_ */
-  transmit_ram_Handle = osThreadNew(transmit_ram, NULL, &transmit_ram__attributes);
+  /* definition and creation of transmit_ram_ */
+  osThreadDef(transmit_ram_, transmit_ram, osPriorityNormal, 0, 2048);
+  transmit_ram_Handle = osThreadCreate(osThread(transmit_ram_), NULL);
 
-  /* creation of LED_Task */
-  LED_TaskHandle = osThreadNew(err_led_task, NULL, &LED_Task_attributes);
+  /* definition and creation of LED_Task */
+  osThreadDef(LED_Task, err_led_task, osPriorityBelowNormal, 0, 256);
+  LED_TaskHandle = osThreadCreate(osThread(LED_Task), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
 
   /* USER CODE END RTOS_THREADS */
-
-  /* USER CODE BEGIN RTOS_EVENTS */
-  /* add events, ... */
-  /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
   osKernelStart();
@@ -634,7 +597,7 @@ static void MX_GPIO_Init(void)
   * @retval None
   */
 /* USER CODE END Header_can_loop */
-void can_loop(void *argument)
+void can_loop(void const * argument)
 {
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
@@ -652,7 +615,7 @@ void can_loop(void *argument)
 * @retval None
 */
 /* USER CODE END Header_dlm_main */
-void dlm_main(void *argument)
+void dlm_main(void const * argument)
 {
   /* USER CODE BEGIN dlm_main */
   /* Infinite loop */
@@ -670,7 +633,7 @@ void dlm_main(void *argument)
 * @retval None
 */
 /* USER CODE END Header_move_ram_to_sd */
-void move_ram_to_sd(void *argument)
+void move_ram_to_sd(void const * argument)
 {
   /* USER CODE BEGIN move_ram_to_sd */
   /* Infinite loop */
@@ -688,7 +651,7 @@ void move_ram_to_sd(void *argument)
 * @retval None
 */
 /* USER CODE END Header_transmit_ram */
-void transmit_ram(void *argument)
+void transmit_ram(void const * argument)
 {
   /* USER CODE BEGIN transmit_ram */
   /* Infinite loop */
@@ -706,7 +669,7 @@ void transmit_ram(void *argument)
 * @retval None
 */
 /* USER CODE END Header_err_led_task */
-void err_led_task(void *argument)
+void err_led_task(void const * argument)
 {
   /* USER CODE BEGIN err_led_task */
   /* Infinite loop */
