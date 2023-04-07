@@ -11,9 +11,11 @@
 #include "dlm-move_ram_data_to_storage.h"
 #include "dlm-storage_structs.h"
 #include "dlm-error_handling.h"
-#include "GopherCAN.h"
+
+#define MIN_SEND_PERIOD_ms 100
 
 static volatile U8 transmit_done = TRUE;
+static U8 last_telem_tx_time[NUM_OF_PARAMETERS] = {0};
 
 void transmit_data_init(void)
 {
@@ -51,5 +53,14 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 	transmit_done = TRUE;
 }
 
+U8 should_add_to_telem_buf(CAN_INFO_STRUCT* param)
+{
+	if (HAL_GetTick() - last_telem_tx_time[param->ID] >= MIN_SEND_PERIOD_ms)
+	{
+		last_telem_tx_time[param->ID] = HAL_GetTick();
+		return TRUE;
+	}
+	return FALSE;
+}
 
 // End of dlm-transmit_ram_data.c

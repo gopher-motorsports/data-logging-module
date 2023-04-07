@@ -13,6 +13,7 @@
 #include "main.h"
 #include "dlm-high_level_functions.h"
 #include "dlm-util.h"
+#include "dlm-transmit_ram_data.h"
 
 
 // array to store the last ms each of the parameters was added
@@ -117,13 +118,19 @@ DLM_ERRORS_t add_param_to_ram(CAN_INFO_STRUCT* param, PPBuff* sd_buffer,
     if (error != DLM_ERR_NO_ERR) return error;
 
 
-	// TODO: only append whitelisted packets to telem buffer
-	if (osMutexWait(mutex_broadcast_bufferHandle,
-					   MUTEX_GET_TIMEOUT_ms) != osOK) return DLM_ERR_MUTEX;
-	error = append_packet(telem_buffer, BROADCAST_BUFFER_SIZE, param->last_rx,
-				(U16)param->ID, data_ptr, data_size);
-	if (osMutexRelease(mutex_broadcast_bufferHandle) != osOK) return DLM_ERR_MUTEX;
-	if (error != DLM_ERR_NO_ERR) return error;
+	if (should_add_to_telem_buf(param))
+	{
+		if (osMutexWait(mutex_broadcast_bufferHandle,
+						   MUTEX_GET_TIMEOUT_ms) != osOK) return DLM_ERR_MUTEX;
+		error = append_packet(telem_buffer, BROADCAST_BUFFER_SIZE, param->last_rx,
+					(U16)param->ID, data_ptr, data_size);
+		if (osMutexRelease(mutex_broadcast_bufferHandle) != osOK) return DLM_ERR_MUTEX;
+
+		// if the buffer is full we dont care about it in the telemetery buffer
+		if (error == DLM_ERR_RAM_FAIL) error = DLM_ERR_NO_ERR;
+
+		if (error != DLM_ERR_NO_ERR) return error;
+	}
 
     return DLM_SUCCESS;
 }

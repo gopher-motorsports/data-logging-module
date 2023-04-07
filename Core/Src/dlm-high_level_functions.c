@@ -77,9 +77,9 @@ void dlm_init(CAN_HandleTypeDef* hcan_ptr1, CAN_HandleTypeDef* hcan_ptr2,
 	// NOTE: CAN will also need to be added in CubeMX and code must be generated
 	// Check the STM_CAN repo for the file "Fxxx CAN Config Settings.pptx" for the correct settings
 #ifndef SIMULATE_DATA_COLLECTION
-	if (init_can(GCAN0, dlm_hcan1, DLM_ID, BXTYPE_MASTER)
-			|| init_can(GCAN1, dlm_hcan2, DLM_ID, BXTYPE_SLAVE)
-			|| init_can(GCAN2, dlm_hcan3, DLM_ID, BXTYPE_MASTER))
+	if (init_can(GCAN0, dlm_hcan1, PLM_ID, BXTYPE_MASTER)
+			|| init_can(GCAN1, dlm_hcan2, PLM_ID, BXTYPE_SLAVE)
+			|| init_can(GCAN2, dlm_hcan3, PLM_ID, BXTYPE_MASTER))
 	{
 		// CAN failed to start. This is a critical error and the OS has not started yet, so do a
 		// blink right here and reset
